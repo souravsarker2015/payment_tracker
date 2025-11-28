@@ -3,12 +3,16 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models import User
-from app.auth import get_password_hash, verify_password, create_access_token
+from app.auth import get_password_hash, verify_password, create_access_token, create_refresh_token, verify_token
 from datetime import timedelta
+from pydantic import BaseModel
 
 router = APIRouter(tags=["auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 @router.post("/register", response_model=User)
 def register(user: User, session: Session = Depends(get_session)):
@@ -36,23 +40,56 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
         )
     
     access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(data={"sub": user.email})
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@router.post("/refresh")
+def refresh_access_token(request: RefreshTokenRequest):
+    """Exchange a refresh token for a new access token"""
+    payload = verify_token(request.refresh_token, token_type="refresh")
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+    
+    # Create new access token
+    new_access_token = create_access_token(data={"sub": email})
+    
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer"
+    }
 
 def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
-    from jose import JWTError, jwt
-    from app.auth import SECRET_KEY, ALGORITHM
+    from app.auth import verify_token
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-    except JWTError:
+    
+    payload = verify_token(token, token_type="access")
+    if not payload:
+        raise credentials_exception
+    
+    email: str = payload.get("sub")
+    if email is None:
         raise credentials_exception
         
     statement = select(User).where(User.email == email)

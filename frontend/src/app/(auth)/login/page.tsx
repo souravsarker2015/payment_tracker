@@ -23,6 +23,7 @@ export default function LoginPage() {
         try {
             const response = await api.post('/token', formData);
             localStorage.setItem('token', response.data.access_token);
+            localStorage.setItem('refreshToken', response.data.refresh_token);
             router.push('/dashboard');
         } catch (err: any) {
             setError('Invalid email or password');
