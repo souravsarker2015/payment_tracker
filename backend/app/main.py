@@ -1,0 +1,27 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from .database import create_db_and_tables
+from .routers import auth, creditors, transactions
+
+app = FastAPI(title="Payment Tracker SaaS")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # TODO: Restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router)
+app.include_router(creditors.router)
+app.include_router(transactions.router)
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to Payment Tracker API"}
