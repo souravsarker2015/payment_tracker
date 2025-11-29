@@ -198,7 +198,7 @@ export default function DashboardPage() {
                                         outerRadius={100}
                                         fill="#8884d8"
                                         dataKey="value"
-                                        label={(entry) => `${entry.name}: ${entry.balance}`}
+                                        label={(entry: any) => `${entry.name}: ${entry.payload.balance}`}
                                         onClick={(data) => handleCreditorClick(data.id)}
                                         style={{ cursor: 'pointer' }}
                                     >
