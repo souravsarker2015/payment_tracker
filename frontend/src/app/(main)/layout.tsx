@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Menu, X, BarChart3, CreditCard, Wallet, Receipt, PieChart } from 'lucide-react';
 import { useState } from 'react';
 
 export default function DashboardLayout({
@@ -39,14 +39,22 @@ export default function DashboardLayout({
                             className="group flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-400 hover:bg-slate-700 hover:text-white transition-colors"
                             onClick={() => setIsSidebarOpen(false)}
                         >
+                            <CreditCard className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                             Creditors Overview
                         </Link>
                         <Link
                             href="/dashboard/debtors"
-                            className="group flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-400 hover:bg-slate-700 hover:text-white transition-colors"
-                            onClick={() => setIsSidebarOpen(false)}
+                            className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         >
+                            <Wallet className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                             Debtors Overview
+                        </Link>
+                        <Link
+                            href="/dashboard/expenses"
+                            className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        >
+                            <PieChart className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                            Expenses Overview
                         </Link>
                     </div>
                     <Link
@@ -54,7 +62,7 @@ export default function DashboardLayout({
                         className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
                         onClick={() => setIsSidebarOpen(false)}
                     >
-                        <Users className="mr-3 h-5 w-5" />
+                        <CreditCard className="mr-3 h-5 w-5" />
                         Creditors
                     </Link>
                     <Link
@@ -62,8 +70,16 @@ export default function DashboardLayout({
                         className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
                         onClick={() => setIsSidebarOpen(false)}
                     >
-                        <Users className="mr-3 h-5 w-5" />
+                        <Wallet className="mr-3 h-5 w-5" />
                         Debtors
+                    </Link>
+                    <Link
+                        href="/expenses"
+                        className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        onClick={() => setIsSidebarOpen(false)}
+                    >
+                        <Receipt className="mr-3 h-5 w-5" />
+                        Expenses
                     </Link>
                 </nav>
             </div>

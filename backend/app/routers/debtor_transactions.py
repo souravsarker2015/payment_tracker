@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models import DebtorTransaction, Debtor, User
-from app.routers.auth import get_current_user
+from app.auth import get_current_user
 from datetime import datetime
 from pydantic import BaseModel
 

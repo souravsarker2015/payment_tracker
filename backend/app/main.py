@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables
-from .routers import auth, creditors, transactions, debtors, debtor_transactions
+from .routers import auth, creditors, transactions, debtors, debtor_transactions, expenses
 
 app = FastAPI(title="Payment Tracker SaaS")
 
@@ -23,6 +23,7 @@ app.include_router(creditors.router)
 app.include_router(transactions.router)
 app.include_router(debtors.router)
 app.include_router(debtor_transactions.router)
+app.include_router(expenses.router)
 
 @app.on_event("startup")
 def on_startup():
