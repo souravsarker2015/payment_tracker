@@ -75,3 +75,32 @@ def refresh_access_token(request: RefreshTokenRequest):
         "token_type": "bearer"
     }
 
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer"
+    }
+
+class ForgotPasswordRequest(BaseModel):
+    username: str
+    new_password: str
+    confirm_password: str
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, session: Session = Depends(get_session)):
+    # Validate passwords match
+    if request.new_password != request.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    
+    # Find user by email (username field contains email)
+    statement = select(User).where(User.email == request.username)
+    user = session.exec(statement).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update password
+    user.password_hash = get_password_hash(request.new_password)
+    session.add(user)
+    session.commit()
+    
+    return {"message": "Password has been reset successfully"}

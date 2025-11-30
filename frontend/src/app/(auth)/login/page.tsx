@@ -26,7 +26,8 @@ export default function LoginPage() {
             localStorage.setItem('refreshToken', response.data.refresh_token);
             router.push('/dashboard');
         } catch (err: any) {
-            setError('Invalid email or password');
+            console.error('Login error:', err);
+            setError(err.response?.data?.detail || 'Invalid email or password');
         }
     };
 
@@ -78,6 +79,14 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
                         />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-end">
+                    <div className="text-sm">
+                        <Link href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+                            Forgot your password?
+                        </Link>
                     </div>
                 </div>
 
