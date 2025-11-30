@@ -33,6 +33,22 @@ export default function DashboardLayout({
                         <LayoutDashboard className="mr-3 h-5 w-5" />
                         Dashboard
                     </Link>
+                    <div className="pl-6 space-y-1">
+                        <Link
+                            href="/dashboard/creditors"
+                            className="group flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            Creditors Overview
+                        </Link>
+                        <Link
+                            href="/dashboard/debtors"
+                            className="group flex items-center px-3 py-2 text-xs font-medium rounded-lg text-gray-400 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            Debtors Overview
+                        </Link>
+                    </div>
                     <Link
                         href="/creditors"
                         className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
