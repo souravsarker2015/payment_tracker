@@ -1,4 +1,6 @@
 from sqlmodel import SQLModel, create_engine, Session
+from dotenv import load_dotenv
+load_dotenv()
 import os # 👈 Import os to read environment variables
 
 # --- Change Start ---

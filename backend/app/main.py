@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables
 from .routers import auth, creditors, transactions, debtors, debtor_transactions, expenses
+from dotenv import load_dotenv
+load_dotenv()
 
 app = FastAPI(title="Payment Tracker SaaS")
 
