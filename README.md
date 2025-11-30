@@ -89,6 +89,10 @@ payment_tracker/
 
 4. Run database migrations:
    ```bash
+
+   alembic revision --autogenerate -m "description of changes"
+
+
    alembic upgrade head
    ```
 
