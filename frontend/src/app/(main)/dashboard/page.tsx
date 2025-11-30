@@ -93,7 +93,7 @@ export default function DashboardPage() {
     };
 
     const handleCreditorClick = (creditorId: number) => {
-        router.push(`/dashboard/creditors/${creditorId}`);
+        router.push(`/creditors/${creditorId}`);
     };
 
     if (loading) return <div>Loading...</div>;
@@ -106,83 +106,67 @@ export default function DashboardPage() {
     }));
 
     return (
-        <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h1>
+        <div className="space-y-6">
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 {/* Total Active Creditors */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Users className="h-6 w-6 text-gray-400" aria-hidden="true" />
+                <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Active Creditors</p>
+                                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalCreditors}</p>
                             </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Active Creditors</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{stats.totalCreditors}</div>
-                                    </dd>
-                                </dl>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                                <Users className="h-6 w-6 text-blue-600" />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Net Balance */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <div className={`h-6 w-6 rounded-full ${stats.netBalance > 0 ? 'bg-red-100' : 'bg-green-100'}`} />
+                <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Net Balance (Owed)</p>
+                                <p className={`text-3xl font-bold mt-2 ${stats.netBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    {stats.netBalance}
+                                </p>
                             </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Net Balance (Owed)</dt>
-                                    <dd>
-                                        <div className={`text-lg font-medium ${stats.netBalance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            {stats.netBalance}
-                                        </div>
-                                    </dd>
-                                </dl>
+                            <div className={`p-3 rounded-lg ${stats.netBalance > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                                <div className={`h-6 w-6 rounded-full ${stats.netBalance > 0 ? 'bg-red-500' : 'bg-green-500'}`} />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Total Borrowed */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <ArrowDownLeft className="h-6 w-6 text-red-400" aria-hidden="true" />
+                <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Total Borrowed</p>
+                                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalBorrowed}</p>
                             </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Borrowed</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{stats.totalBorrowed}</div>
-                                    </dd>
-                                </dl>
+                            <div className="p-3 bg-red-50 rounded-lg">
+                                <ArrowDownLeft className="h-6 w-6 text-red-600" />
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Total Repaid */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <ArrowUpRight className="h-6 w-6 text-green-400" aria-hidden="true" />
+                <div className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-gray-600">Total Repaid</p>
+                                <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalRepaid}</p>
                             </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Repaid</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{stats.totalRepaid}</div>
-                                    </dd>
-                                </dl>
+                            <div className="p-3 bg-green-50 rounded-lg">
+                                <ArrowUpRight className="h-6 w-6 text-green-600" />
                             </div>
                         </div>
                     </div>
@@ -192,8 +176,8 @@ export default function DashboardPage() {
             {/* Doughnut Chart and Creditor List */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Doughnut Chart */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Active Creditors by Balance</h2>
+                <div className="bg-white shadow-sm rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-6">Active Creditors by Balance</h2>
                     {chartData.length > 0 ? (
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
@@ -225,8 +209,8 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Creditor List */}
-                <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Active Creditor Details</h2>
+                <div className="bg-white shadow-sm rounded-xl border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-6">Active Creditor Details</h2>
                     <div className="space-y-3">
                         {creditorsWithBalance.map((creditor, index) => (
                             <div

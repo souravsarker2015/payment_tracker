@@ -19,37 +19,43 @@ export default function DashboardLayout({
     };
 
     const SidebarContent = () => (
-        <div className="flex flex-col h-full bg-gray-800">
-            <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-                <div className="flex items-center flex-shrink-0 px-4">
+        <div className="flex flex-col h-full bg-slate-800">
+            <div className="flex-1 flex flex-col overflow-y-auto">
+                <div className="flex items-center flex-shrink-0 px-6 py-6 border-b border-slate-700">
                     <h1 className="text-white text-xl font-bold">Tracker SaaS</h1>
                 </div>
-                <nav className="mt-5 flex-1 px-2 space-y-1">
+                <nav className="flex-1 px-4 py-6 space-y-2">
                     <Link
                         href="/dashboard"
-                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-gray-700"
+                        className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
                         onClick={() => setIsSidebarOpen(false)}
                     >
-                        <LayoutDashboard className="mr-3 h-6 w-6 text-gray-300" />
+                        <LayoutDashboard className="mr-3 h-5 w-5" />
                         Dashboard
                     </Link>
                     <Link
-                        href="/dashboard/creditors"
-                        className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-white hover:bg-gray-700"
+                        href="/creditors"
+                        className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
                         onClick={() => setIsSidebarOpen(false)}
                     >
-                        <Users className="mr-3 h-6 w-6 text-gray-300" />
+                        <Users className="mr-3 h-5 w-5" />
                         Creditors
+                    </Link>
+                    <Link
+                        href="/debtors"
+                        className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        onClick={() => setIsSidebarOpen(false)}
+                    >
+                        <Users className="mr-3 h-5 w-5" />
+                        Debtors
                     </Link>
                 </nav>
             </div>
-            <div className="flex-shrink-0 flex bg-gray-700 p-4">
-                <button onClick={handleLogout} className="flex-shrink-0 w-full group block">
+            <div className="flex-shrink-0 border-t border-slate-700">
+                <button onClick={handleLogout} className="w-full px-4 py-4 hover:bg-slate-700 transition-colors">
                     <div className="flex items-center">
-                        <LogOut className="inline-block h-9 w-9 rounded-full text-gray-300 p-1" />
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-white">Logout</p>
-                        </div>
+                        <LogOut className="h-5 w-5 text-gray-300" />
+                        <span className="ml-3 text-sm font-medium text-gray-300">Logout</span>
                     </div>
                 </button>
             </div>
