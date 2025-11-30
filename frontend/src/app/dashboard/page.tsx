@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 interface Creditor {
     id: number;
     name: string;
+    is_active: boolean;
 }
 
 interface Transaction {
@@ -48,20 +49,27 @@ export default function DashboardPage() {
                 api.get('/transactions')
             ]);
 
-            const creditors: Creditor[] = creditorsRes.data;
+            const allCreditors: Creditor[] = creditorsRes.data;
             const transactions: Transaction[] = transactionsRes.data;
 
-            const totalBorrowed = transactions
+            // Filter only active creditors
+            const activeCreditors = allCreditors.filter(c => c.is_active);
+            const activeCreditorIds = new Set(activeCreditors.map(c => c.id));
+
+            // Filter transactions for active creditors only
+            const activeTransactions = transactions.filter(t => activeCreditorIds.has(t.creditor_id));
+
+            const totalBorrowed = activeTransactions
                 .filter((t) => t.type === 'BORROW')
                 .reduce((acc, t) => acc + t.amount, 0);
 
-            const totalRepaid = transactions
+            const totalRepaid = activeTransactions
                 .filter((t) => t.type === 'REPAY')
                 .reduce((acc, t) => acc + t.amount, 0);
 
-            // Calculate balance per creditor
-            const creditorBalances = creditors.map(creditor => {
-                const creditorTransactions = transactions.filter(t => t.creditor_id === creditor.id);
+            // Calculate balance per active creditor
+            const creditorBalances = activeCreditors.map(creditor => {
+                const creditorTransactions = activeTransactions.filter(t => t.creditor_id === creditor.id);
                 const balance = creditorTransactions.reduce((acc, t) => {
                     if (t.type === 'BORROW') return acc + t.amount;
                     if (t.type === 'REPAY') return acc - t.amount;
@@ -71,7 +79,7 @@ export default function DashboardPage() {
             }).filter(c => c.balance !== 0); // Only show creditors with non-zero balance
 
             setStats({
-                totalCreditors: creditors.length,
+                totalCreditors: activeCreditors.length,
                 totalBorrowed,
                 totalRepaid,
                 netBalance: totalBorrowed - totalRepaid
@@ -102,7 +110,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-semibold text-gray-900 mb-6">Dashboard Overview</h1>
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-                {/* Total Creditors */}
+                {/* Total Active Creditors */}
                 <div className="bg-white overflow-hidden shadow rounded-lg">
                     <div className="p-5">
                         <div className="flex items-center">
@@ -111,7 +119,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="ml-5 w-0 flex-1">
                                 <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Creditors</dt>
+                                    <dt className="text-sm font-medium text-gray-500 truncate">Active Creditors</dt>
                                     <dd>
                                         <div className="text-lg font-medium text-gray-900">{stats.totalCreditors}</div>
                                     </dd>
@@ -185,7 +193,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {/* Doughnut Chart */}
                 <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Creditors by Balance</h2>
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Active Creditors by Balance</h2>
                     {chartData.length > 0 ? (
                         <div className="h-80">
                             <ResponsiveContainer width="100%" height="100%">
@@ -212,13 +220,13 @@ export default function DashboardPage() {
                             </ResponsiveContainer>
                         </div>
                     ) : (
-                        <p className="text-gray-500 text-center py-8">No creditors with outstanding balances</p>
+                        <p className="text-gray-500 text-center py-8">No active creditors with outstanding balances</p>
                     )}
                 </div>
 
                 {/* Creditor List */}
                 <div className="bg-white shadow rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Creditor Details</h2>
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Active Creditor Details</h2>
                     <div className="space-y-3">
                         {creditorsWithBalance.map((creditor, index) => (
                             <div
@@ -239,7 +247,7 @@ export default function DashboardPage() {
                             </div>
                         ))}
                         {creditorsWithBalance.length === 0 && (
-                            <p className="text-gray-500 text-center py-4">No creditors with outstanding balances</p>
+                            <p className="text-gray-500 text-center py-4">No active creditors with outstanding balances</p>
                         )}
                     </div>
                 </div>

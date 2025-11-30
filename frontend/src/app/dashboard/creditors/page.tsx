@@ -9,6 +9,9 @@ import Modal from '@/components/Modal';
 interface Creditor {
     id: number;
     name: string;
+    phone?: string;
+    creditor_type?: string;
+    is_active: boolean;
 }
 
 export default function CreditorsPage() {
@@ -18,7 +21,12 @@ export default function CreditorsPage() {
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCreditor, setEditingCreditor] = useState<Creditor | null>(null);
-    const [formData, setFormData] = useState({ name: '' });
+    const [formData, setFormData] = useState({ 
+        name: '', 
+        phone: '', 
+        creditor_type: '',
+        is_active: true 
+    });
 
     useEffect(() => {
         fetchCreditors();
@@ -47,23 +55,35 @@ export default function CreditorsPage() {
 
     const openAddModal = () => {
         setEditingCreditor(null);
-        setFormData({ name: '' });
+        setFormData({ name: '', phone: '', creditor_type: '', is_active: true });
         setIsModalOpen(true);
     };
 
     const openEditModal = (creditor: Creditor) => {
         setEditingCreditor(creditor);
-        setFormData({ name: creditor.name });
+        setFormData({ 
+            name: creditor.name, 
+            phone: creditor.phone || '', 
+            creditor_type: creditor.creditor_type || '',
+            is_active: creditor.is_active 
+        });
         setIsModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const payload = {
+                name: formData.name,
+                phone: formData.phone || null,
+                creditor_type: formData.creditor_type || null,
+                is_active: formData.is_active
+            };
+            
             if (editingCreditor) {
-                await api.put(`/creditors/${editingCreditor.id}`, formData);
+                await api.put(`/creditors/${editingCreditor.id}`, payload);
             } else {
-                await api.post('/creditors', formData);
+                await api.post('/creditors', payload);
             }
             setIsModalOpen(false);
             fetchCreditors();
@@ -92,7 +112,9 @@ export default function CreditorsPage() {
             >
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                     <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                            Name <span className="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
                             id="name"
@@ -102,6 +124,47 @@ export default function CreditorsPage() {
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
                         />
                     </div>
+                    
+                    <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                            Phone <span className="text-gray-400">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="phone"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="creditor_type" className="block text-sm font-medium text-gray-700">
+                            Creditor Type <span className="text-gray-400">(optional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="creditor_type"
+                            value={formData.creditor_type}
+                            onChange={(e) => setFormData({ ...formData, creditor_type: e.target.value })}
+                            placeholder="e.g., Supplier, Friend, Family"
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+                        />
+                    </div>
+
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="is_active"
+                            checked={formData.is_active}
+                            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+                            Active
+                        </label>
+                    </div>
+
                     <div className="mt-5 sm:mt-6">
                         <button
                             type="submit"
@@ -124,14 +187,27 @@ export default function CreditorsPage() {
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-medium text-indigo-600 truncate">{creditor.name}</p>
                                         <div className="ml-2 flex-shrink-0 flex">
-                                            <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                Active
+                                            <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                creditor.is_active 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {creditor.is_active ? 'Active' : 'Inactive'}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="mt-2 sm:flex sm:justify-between">
-                                        <div className="sm:flex">
-                                            {/* Phone removed */}
+                                        <div className="sm:flex space-x-4">
+                                            {creditor.phone && (
+                                                <p className="flex items-center text-sm text-gray-500">
+                                                    📞 {creditor.phone}
+                                                </p>
+                                            )}
+                                            {creditor.creditor_type && (
+                                                <p className="flex items-center text-sm text-gray-500">
+                                                    🏷️ {creditor.creditor_type}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </Link>

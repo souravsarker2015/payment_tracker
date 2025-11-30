@@ -33,6 +33,7 @@ export default function CreditorDetailsPage() {
     const [amount, setAmount] = useState('');
     const [type, setType] = useState<'BORROW' | 'REPAY'>('BORROW');
     const [note, setNote] = useState('');
+    const [transactionDate, setTransactionDate] = useState('');
 
     // Add Transaction Modal State
     const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
@@ -43,6 +44,7 @@ export default function CreditorDetailsPage() {
     const [modalAmount, setModalAmount] = useState('');
     const [modalType, setModalType] = useState<'BORROW' | 'REPAY'>('BORROW');
     const [modalNote, setModalNote] = useState('');
+    const [modalTransactionDate, setModalTransactionDate] = useState('');
 
     useEffect(() => {
         if (id) {
@@ -75,14 +77,22 @@ export default function CreditorDetailsPage() {
         if (!amount || !id) return;
 
         try {
-            await api.post('/transactions', {
+            const payload: any = {
                 creditor_id: Number(id),
                 amount: Number(amount),
                 type,
                 note
-            });
+            };
+
+            // Only include date if provided, otherwise backend will use current time
+            if (transactionDate) {
+                payload.date = new Date(transactionDate).toISOString();
+            }
+
+            await api.post('/transactions', payload);
             setAmount('');
             setNote('');
+            setTransactionDate('');
             setIsAddTransactionModalOpen(false);
             fetchData();
         } catch (error) {
@@ -105,6 +115,10 @@ export default function CreditorDetailsPage() {
         setModalAmount(transaction.amount.toString());
         setModalType(transaction.type);
         setModalNote(transaction.note || '');
+        // Format date for datetime-local input
+        const date = new Date(transaction.date);
+        const formattedDate = date.toISOString().slice(0, 16);
+        setModalTransactionDate(formattedDate);
         setIsTransactionModalOpen(true);
     };
 
@@ -113,12 +127,19 @@ export default function CreditorDetailsPage() {
         if (!editingTransaction) return;
 
         try {
-            await api.put(`/transactions/${editingTransaction.id}`, {
+            const payload: any = {
                 creditor_id: Number(id),
                 amount: Number(modalAmount),
                 type: modalType,
                 note: modalNote
-            });
+            };
+
+            // Include date if provided
+            if (modalTransactionDate) {
+                payload.date = new Date(modalTransactionDate).toISOString();
+            }
+
+            await api.put(`/transactions/${editingTransaction.id}`, payload);
             setIsTransactionModalOpen(false);
             fetchData();
         } catch (error) {
@@ -330,6 +351,18 @@ export default function CreditorDetailsPage() {
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
                         />
                     </div>
+                    <div>
+                        <label htmlFor="transactionDate" className="block text-sm font-medium text-gray-700">
+                            Date & Time <span className="text-gray-400">(optional, defaults to now)</span>
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="transactionDate"
+                            value={transactionDate}
+                            onChange={(e) => setTransactionDate(e.target.value)}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+                        />
+                    </div>
                     <div className="mt-5 sm:mt-6">
                         <button
                             type="submit"
@@ -378,6 +411,18 @@ export default function CreditorDetailsPage() {
                             id="modalNote"
                             value={modalNote}
                             onChange={(e) => setModalNote(e.target.value)}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="modalTransactionDate" className="block text-sm font-medium text-gray-700">
+                            Date & Time
+                        </label>
+                        <input
+                            type="datetime-local"
+                            id="modalTransactionDate"
+                            value={modalTransactionDate}
+                            onChange={(e) => setModalTransactionDate(e.target.value)}
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-black"
                         />
                     </div>

@@ -54,6 +54,8 @@ def update_creditor(
     
     creditor.name = creditor_data.name
     creditor.phone = creditor_data.phone
+    creditor.creditor_type = creditor_data.creditor_type
+    creditor.is_active = creditor_data.is_active
     session.add(creditor)
     session.commit()
     session.refresh(creditor)

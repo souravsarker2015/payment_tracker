@@ -13,6 +13,8 @@ class Creditor(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
     phone: Optional[str] = Field(default=None)
+    creditor_type: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=True)
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
     user: Optional[User] = Relationship(back_populates="creditors")
