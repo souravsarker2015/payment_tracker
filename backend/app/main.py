@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables
-from .routers import auth, creditors, transactions, debtors, debtor_transactions, expenses
+from .routers import auth, creditors, transactions, debtors, debtor_transactions, expenses, ponds, suppliers, labor, fish_sales
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -26,6 +26,10 @@ app.include_router(transactions.router)
 app.include_router(debtors.router)
 app.include_router(debtor_transactions.router)
 app.include_router(expenses.router)
+app.include_router(ponds.router)
+app.include_router(suppliers.router)
+app.include_router(labor.router)
+app.include_router(fish_sales.router)
 
 @app.on_event("startup")
 def on_startup():

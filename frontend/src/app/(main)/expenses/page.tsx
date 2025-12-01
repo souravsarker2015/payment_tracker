@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Trash2, Settings, Calendar, Filter, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Settings, Calendar, Filter, ChevronDown, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface ExpenseType {
@@ -46,6 +46,8 @@ export default function ExpensesPage() {
         expense_type_id: ''
     });
     const [newTypeName, setNewTypeName] = useState('');
+    const [isAddingType, setIsAddingType] = useState(false);
+    const [quickTypeName, setQuickTypeName] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -171,6 +173,25 @@ export default function ExpensesPage() {
             setExpenseTypes(typesRes.data);
         } catch (error) {
             console.error('Failed to delete expense type', error);
+        }
+    };
+
+    const handleQuickAddType = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!quickTypeName.trim()) return;
+        try {
+            const res = await api.post('/expense-types', { name: quickTypeName });
+            setQuickTypeName('');
+            setIsAddingType(false);
+
+            const typesRes = await api.get('/expense-types');
+            setExpenseTypes(typesRes.data);
+
+            if (res.data && res.data.id) {
+                setFormData(prev => ({ ...prev, expense_type_id: res.data.id.toString() }));
+            }
+        } catch (error) {
+            console.error('Failed to add expense type', error);
         }
     };
 
@@ -379,18 +400,61 @@ export default function ExpensesPage() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Expense Type</label>
-                        <select
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
-                            value={formData.expense_type_id}
-                            onChange={(e) => setFormData({ ...formData, expense_type_id: e.target.value })}
-                        >
-                            <option value="">Select a type</option>
-                            {expenseTypes.map((type) => (
-                                <option key={type.id} value={type.id}>
-                                    {type.name}
-                                </option>
-                            ))}
-                        </select>
+                        {isAddingType ? (
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="New type name"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                                    value={quickTypeName}
+                                    onChange={(e) => setQuickTypeName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleQuickAddType(e as any);
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleQuickAddType}
+                                    className="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                                >
+                                    <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingType(false)}
+                                    className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mt-1 flex gap-2">
+                                <select
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                                    value={formData.expense_type_id}
+                                    onChange={(e) => setFormData({ ...formData, expense_type_id: e.target.value })}
+                                >
+                                    <option value="">Select a type</option>
+                                    {expenseTypes.map((type) => (
+                                        <option key={type.id} value={type.id}>
+                                            {type.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingType(true)}
+                                    className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                    title="Add new type"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <div className="mt-5 sm:mt-6">
                         <button
