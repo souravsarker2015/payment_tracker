@@ -20,7 +20,7 @@ interface Expense {
     expense_type?: ExpenseType;
 }
 
-type FilterMode = 'all' | 'today' | 'week' | 'month' | 'year' | 'select_month' | 'custom';
+type FilterMode = 'all' | 'today' | 'week' | 'month' | 'year' | 'select_month' | 'select_year' | 'custom';
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -82,6 +82,10 @@ export default function ExpensesPage() {
             case 'select_month':
                 start = new Date(selectedYear, selectedMonth, 1);
                 end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
+                break;
+            case 'select_year':
+                start = new Date(selectedYear, 0, 1);
+                end = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
                 break;
             case 'custom':
                 if (customStartDate) start = new Date(customStartDate);
@@ -237,8 +241,23 @@ export default function ExpensesPage() {
                     <option value="month">This Month</option>
                     <option value="year">This Year</option>
                     <option value="select_month">Select Month</option>
+                    <option value="select_year">Select Year</option>
                     <option value="custom">Custom Range</option>
                 </select>
+
+                {filterMode === 'select_year' && (
+                    <div className="flex space-x-2">
+                        <select
+                            className="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        >
+                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 {filterMode === 'select_month' && (
                     <div className="flex space-x-2">

@@ -11,8 +11,9 @@ router = APIRouter(tags=["fish_sales"])
 
 class FishSaleItemCreate(BaseModel):
     pond_id: int
-    weight_kg: float
-    rate_per_kg: float
+    quantity: float
+    unit_id: int
+    rate_per_unit: float
     amount: float
 
 class FishSaleCreate(BaseModel):
@@ -20,7 +21,7 @@ class FishSaleCreate(BaseModel):
     buyer_name: str = None
     total_amount: float
     total_weight: float = None
-    items: List[FishSaleItemCreate]
+    items: List[FishSaleItemCreate] = []  # Make items optional
 
 @router.post("/fish-sales", response_model=FishSale)
 def create_fish_sale(
@@ -50,8 +51,9 @@ def create_fish_sale(
         item = FishSaleItem(
             sale_id=sale.id,
             pond_id=item_data.pond_id,
-            weight_kg=item_data.weight_kg,
-            rate_per_kg=item_data.rate_per_kg,
+            quantity=item_data.quantity,
+            unit_id=item_data.unit_id,
+            rate_per_unit=item_data.rate_per_unit,
             amount=item_data.amount
         )
         session.add(item)

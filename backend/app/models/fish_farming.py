@@ -12,6 +12,16 @@ class TransactionType(str, Enum):
 
 # --- Models ---
 
+class Unit(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str  # e.g., "kg", "mon", "pcs", "ton"
+    name_bn: Optional[str] = None  # Bengali name, e.g., "কেজি", "মণ", "পিস", "টন"
+    is_default: bool = False  # True for system defaults
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")  # Null for defaults
+    
+    # Relationships
+    sale_items: List["FishSaleItem"] = Relationship(back_populates="unit")
+
 class Pond(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
@@ -71,10 +81,12 @@ class FishSaleItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     sale_id: int = Field(foreign_key="fishsale.id")
     pond_id: int = Field(foreign_key="pond.id")
-    weight_kg: float
-    rate_per_kg: float
+    quantity: float  # Changed from weight_kg to quantity
+    unit_id: int = Field(foreign_key="unit.id")  # Reference to Unit
+    rate_per_unit: float  # Changed from rate_per_kg
     amount: float
     
     # Relationships
     sale: Optional[FishSale] = Relationship(back_populates="items")
     pond: Optional[Pond] = Relationship(back_populates="sale_items")
+    unit: Optional[Unit] = Relationship(back_populates="sale_items")
