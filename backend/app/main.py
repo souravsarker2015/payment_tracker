@@ -37,6 +37,12 @@ app.include_router(dashboard.router)
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    # Seed default units if they don't exist
+    try:
+        from app.seed_units import seed_units
+        seed_units()
+    except Exception as e:
+        print(f"Warning: Failed to seed units: {e}")
 
 @app.get("/")
 def read_root():
