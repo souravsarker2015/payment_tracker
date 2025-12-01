@@ -1,0 +1,9 @@
+alembic revision --autogenerate -m "description of changes"
+
+
+alembic upgrade head
+
+
+uvicorn app.main:app --reload
+
+npm run dev
