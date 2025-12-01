@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Trash2, Fish, DollarSign, Scale, Eye, Edit, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -32,7 +33,19 @@ interface FishSale {
     sale_type: 'simple' | 'detailed';
     total_amount: number;
     total_weight?: number;
-    items: any[];
+    items: Array<{
+        pond_id: number;
+        quantity: number;
+        unit_id: number;
+        rate_per_unit: number;
+        amount: number;
+    }>;
+}
+
+interface Unit {
+    id: number;
+    name: string;
+    name_bn?: string;
 }
 
 type FilterMode = 'all' | 'today' | 'week' | 'month' | 'year' | 'select_month' | 'select_year' | 'custom';
@@ -492,14 +505,196 @@ export default function SalesPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Total Sold */}
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-sm text-gray-500">Total Revenue</div>
+                    <div className="text-sm text-gray-500">Total Sold</div>
                     <div className="text-3xl font-bold text-green-600">৳{totalRevenue.toLocaleString()}</div>
                 </div>
+
+                {/* Unit-wise Breakdown */}
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                    <div className="text-sm text-gray-500">Total Weight Sold</div>
-                    <div className="text-3xl font-bold text-gray-900">{totalWeight.toFixed(2)} kg</div>
+                    <div className="text-sm text-gray-500 mb-3">Sales by Unit</div>
+                    <div className="space-y-2">
+                        {(() => {
+                            // Calculate unit-wise totals
+                            const unitTotals: Record<number, { name: string; quantity: number; amount: number }> = {};
+
+                            sales.forEach(sale => {
+                                if (sale.items && sale.items.length > 0) {
+                                    sale.items.forEach(item => {
+                                        if (!unitTotals[item.unit_id]) {
+                                            const unit = units.find(u => u.id === item.unit_id);
+                                            unitTotals[item.unit_id] = {
+                                                name: unit?.name || 'Unknown',
+                                                quantity: 0,
+                                                amount: 0
+                                            };
+                                        }
+                                        unitTotals[item.unit_id].quantity += item.quantity;
+                                        unitTotals[item.unit_id].amount += item.amount;
+                                    });
+                                }
+                            });
+
+                            const unitData = Object.values(unitTotals);
+
+                            if (unitData.length === 0) {
+                                return <div className="text-sm text-gray-400">No sales data</div>;
+                            }
+
+                            return unitData.map((unit, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-700">{unit.name}</span>
+                                        <span className="text-xs text-gray-500 ml-2">({unit.quantity.toFixed(2)})</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-green-600">৳{unit.amount.toLocaleString()}</span>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </div>
+
+                {/* Pond-wise Breakdown */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <div className="text-sm text-gray-500 mb-3">Sales by Pond</div>
+                    <div className="space-y-2">
+                        {(() => {
+                            // Calculate pond-wise totals
+                            const pondTotals: Record<number, { name: string; quantity: number; amount: number }> = {};
+
+                            sales.forEach(sale => {
+                                if (sale.items && sale.items.length > 0) {
+                                    sale.items.forEach(item => {
+                                        if (!pondTotals[item.pond_id]) {
+                                            const pond = ponds.find(p => p.id === item.pond_id);
+                                            pondTotals[item.pond_id] = {
+                                                name: pond?.name || 'Unknown',
+                                                quantity: 0,
+                                                amount: 0
+                                            };
+                                        }
+                                        pondTotals[item.pond_id].quantity += item.quantity;
+                                        pondTotals[item.pond_id].amount += item.amount;
+                                    });
+                                }
+                            });
+
+                            const pondData = Object.values(pondTotals);
+
+                            if (pondData.length === 0) {
+                                return <div className="text-sm text-gray-400">No sales data</div>;
+                            }
+
+                            return pondData.map((pond, index) => (
+                                <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-700">{pond.name}</span>
+                                        <span className="text-xs text-gray-500 ml-2">({pond.quantity.toFixed(2)})</span>
+                                    </div>
+                                    <span className="text-sm font-bold text-green-600">৳{pond.amount.toLocaleString()}</span>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Unit-wise Distribution Chart */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Distribution by Unit</h3>
+                    {(() => {
+                        const unitTotals: Record<number, { name: string; amount: number }> = {};
+
+                        sales.forEach(sale => {
+                            if (sale.items && sale.items.length > 0) {
+                                sale.items.forEach(item => {
+                                    if (!unitTotals[item.unit_id]) {
+                                        const unit = units.find(u => u.id === item.unit_id);
+                                        unitTotals[item.unit_id] = {
+                                            name: unit?.name || 'Unknown',
+                                            amount: 0
+                                        };
+                                    }
+                                    unitTotals[item.unit_id].amount += item.amount;
+                                });
+                            }
+                        });
+
+                        const chartData = Object.values(unitTotals);
+                        const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+                        if (chartData.length === 0) {
+                            return <div className="text-sm text-gray-400 text-center py-8">No data available</div>;
+                        }
+
+                        return (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={chartData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        label={({ name, percent }: any) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
+                                        outerRadius={80}
+                                        fill="#8884d8"
+                                        dataKey="amount"
+                                    >
+                                        {chartData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        );
+                    })()}
+                </div>
+
+                {/* Pond-wise Distribution Chart */}
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales Distribution by Pond</h3>
+                    {(() => {
+                        const pondTotals: Record<number, { name: string; amount: number }> = {};
+
+                        sales.forEach(sale => {
+                            if (sale.items && sale.items.length > 0) {
+                                sale.items.forEach(item => {
+                                    if (!pondTotals[item.pond_id]) {
+                                        const pond = ponds.find(p => p.id === item.pond_id);
+                                        pondTotals[item.pond_id] = {
+                                            name: pond?.name || 'Unknown',
+                                            amount: 0
+                                        };
+                                    }
+                                    pondTotals[item.pond_id].amount += item.amount;
+                                });
+                            }
+                        });
+
+                        const chartData = Object.values(pondTotals);
+                        const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+                        if (chartData.length === 0) {
+                            return <div className="text-sm text-gray-400 text-center py-8">No data available</div>;
+                        }
+
+                        return (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" style={{ fontSize: '12px' }} />
+                                    <YAxis style={{ fontSize: '12px' }} />
+                                    <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+                                    <Bar dataKey="amount" fill="#10b981" name="Sales (৳)" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -511,7 +706,7 @@ export default function SalesPage() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buyer</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Weight (kg)</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Weight</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
@@ -530,38 +725,52 @@ export default function SalesPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                sales.map((sale) => (
-                                    <tr key={sale.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(sale.date).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {sale.buyer_name || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                                            {sale.total_weight?.toFixed(2) || '-'}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 text-right">
-                                            ৳{sale.total_amount.toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                            <div className="flex justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleEditSale(sale)}
-                                                    className="text-gray-400 hover:text-indigo-600 transition-colors"
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(sale.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                sales.map((sale) => {
+                                    // Get unit name for the sale
+                                    const getWeightDisplay = () => {
+                                        if (!sale.items || sale.items.length === 0 || !sale.total_weight) {
+                                            return '-';
+                                        }
+                                        // Get the first item's unit (assuming all items use same unit for weight)
+                                        const firstItem = sale.items[0];
+                                        const unit = units.find(u => u.id === firstItem.unit_id);
+                                        const unitName = unit?.name || 'kg';
+                                        return `${sale.total_weight.toFixed(2)} ${unitName}`;
+                                    };
+
+                                    return (
+                                        <tr key={sale.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(sale.date).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {sale.buyer_name || '-'}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                                {getWeightDisplay()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 text-right">
+                                                ৳{sale.total_amount.toLocaleString()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleEditSale(sale)}
+                                                        className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(sale.id)}
+                                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

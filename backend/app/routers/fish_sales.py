@@ -90,18 +90,39 @@ def create_fish_sale(
 
 @router.get("/fish-sales", response_model=List[FishSaleResponse])
 def read_fish_sales(
+    start_date: str = None,
+    end_date: str = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     from sqlmodel import select
     from sqlalchemy.orm import selectinload
+    from datetime import datetime
     
     query = (
         select(FishSale)
         .where(FishSale.user_id == current_user.id)
         .options(selectinload(FishSale.items))
-        .order_by(FishSale.date.desc())
     )
+    
+    # Apply date filters if provided
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query = query.where(FishSale.date >= start_dt)
+            print(f"Filtering sales from: {start_dt}")
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query = query.where(FishSale.date <= end_dt)
+            print(f"Filtering sales until: {end_dt}")
+        except ValueError:
+            pass
+    
+    query = query.order_by(FishSale.date.desc())
     sales = session.exec(query).all()
     
     print(f"Found {len(sales)} sales")

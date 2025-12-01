@@ -88,6 +88,14 @@ export default function DashboardLayout({
                             Gher (মাছের ঘের)
                         </div>
                         <Link
+                            href="/gher"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <BarChart3 className="mr-3 h-4 w-4" />
+                            Dashboard (ড্যাশবোর্ড)
+                        </Link>
+                        <Link
                             href="/gher/ponds"
                             className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
                             onClick={() => setIsSidebarOpen(false)}
