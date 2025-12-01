@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, Fish, DollarSign, Scale, Eye, Edit, RefreshCw } from 'lucide-react';
 import Modal from '@/components/Modal';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface Pond {
     id: number;
@@ -28,6 +29,7 @@ interface FishSale {
     id: number;
     date: string;
     buyer_name?: string;
+    sale_type: 'simple' | 'detailed';
     total_amount: number;
     total_weight?: number;
     items: any[];
@@ -41,6 +43,7 @@ export default function SalesPage() {
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [editingSale, setEditingSale] = useState<FishSale | null>(null);
 
     // Filter States
     const [filterMode, setFilterMode] = useState<FilterMode>('month'); // Default to this month
@@ -67,26 +70,34 @@ export default function SalesPage() {
         amount: 0
     }]);
 
+    const [filterLoading, setFilterLoading] = useState(false);
+    const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [pendingSubmit, setPendingSubmit] = useState<any>(null);
+
     useEffect(() => {
         fetchData();
+        fetchPonds();
+        fetchUnits();
     }, [filterMode, customStartDate, customEndDate, selectedYear, selectedMonth]);
 
     const getDateRange = () => {
         const now = new Date();
-        let start: Date | null = null;
-        let end: Date | null = null;
+        let start = new Date();
+        let end = new Date();
 
         switch (filterMode) {
             case 'today':
-                start = new Date(now.setHours(0, 0, 0, 0));
-                end = new Date(now.setHours(23, 59, 59, 999));
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
                 break;
             case 'week':
-                const day = now.getDay();
-                const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+                // Calculate start of the current week (Monday)
+                const day = now.getDay(); // 0 for Sunday, 1 for Monday, etc.
+                const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday being 0
                 start = new Date(now.setDate(diff));
                 start.setHours(0, 0, 0, 0);
-                end = new Date(now);
+                end = new Date(); // End of today
                 end.setHours(23, 59, 59, 999);
                 break;
             case 'month':
@@ -106,45 +117,65 @@ export default function SalesPage() {
                 end = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
                 break;
             case 'custom':
-                if (customStartDate) start = new Date(customStartDate);
-                if (customEndDate) {
-                    end = new Date(customEndDate);
-                    end.setHours(23, 59, 59, 999);
+                if (customStartDate && customEndDate) {
+                    const customStart = new Date(customStartDate);
+                    const customEnd = new Date(customEndDate);
+                    customEnd.setHours(23, 59, 59, 999);
+                    return {
+                        start_date: customStart.toISOString(),
+                        end_date: customEnd.toISOString()
+                    };
                 }
-                break;
+                return null;
             case 'all':
-            default:
-                break;
+            default: // 'all'
+                return null;
         }
-        return { start, end };
+
+        return {
+            start_date: start.toISOString(),
+            end_date: end.toISOString()
+        };
     };
 
     const fetchData = async () => {
         try {
-            const [salesRes, pondsRes, unitsRes] = await Promise.all([
-                api.get('/fish-sales'),
-                api.get('/ponds'),
-                api.get('/units')
-            ]);
+            setFilterLoading(true);
+            const dateRange = getDateRange();
+            const params = new URLSearchParams();
 
-            // Apply client-side filtering
-            const { start, end } = getDateRange();
-            let filteredSales = salesRes.data;
-
-            if (start && end) {
-                filteredSales = salesRes.data.filter((sale: FishSale) => {
-                    const saleDate = new Date(sale.date);
-                    return saleDate >= start && saleDate <= end;
-                });
+            if (dateRange) {
+                params.append('start_date', dateRange.start_date);
+                params.append('end_date', dateRange.end_date);
             }
 
-            setSales(filteredSales);
-            setPonds(pondsRes.data);
-            setUnits(unitsRes.data);
+            const response = await api.get(`/fish-sales?${params.toString()}`);
+            console.log('Sales fetched:', response.data);
+            setSales(response.data);
         } catch (error) {
-            console.error('Failed to fetch data', error);
+            console.error('Failed to fetch sales', error);
+            setFeedbackMessage({ type: 'error', text: 'Failed to fetch sales' });
         } finally {
             setLoading(false);
+            setFilterLoading(false);
+        }
+    };
+
+    const fetchPonds = async () => {
+        try {
+            const response = await api.get('/ponds');
+            setPonds(response.data);
+        } catch (error) {
+            console.error('Failed to fetch ponds', error);
+        }
+    };
+
+    const fetchUnits = async () => {
+        try {
+            const response = await api.get('/units');
+            setUnits(response.data);
+        } catch (error) {
+            console.error('Failed to fetch units', error);
         }
     };
 
@@ -185,6 +216,7 @@ export default function SalesPage() {
             requestData = {
                 date: new Date(formData.date).toISOString(),
                 buyer_name: formData.buyer_name || undefined,
+                sale_type: 'simple',
                 total_amount: parseFloat(simpleFormData.total_amount),
                 items: []
             };
@@ -202,16 +234,37 @@ export default function SalesPage() {
             requestData = {
                 date: new Date(formData.date).toISOString(),
                 buyer_name: formData.buyer_name,
+                sale_type: 'detailed',
                 total_amount: totalAmount,
                 total_weight: totalWeight,
                 items: saleItems
             };
         }
 
+        // Safety check: Warn if converting detailed to simple
+        if (entryMode === 'simple' && editingSale?.sale_type === 'detailed') {
+            setPendingSubmit(requestData);
+            setShowConfirmModal(true);
+            return;
+        }
+
         try {
-            await api.post('/fish-sales', requestData);
+            console.log('Current Entry Mode:', entryMode);
+            console.log('Sending request data:', requestData);
+            console.log('Items count:', requestData.items ? requestData.items.length : 0);
+
+            if (editingSale) {
+                // Update existing sale
+                await api.put(`/fish-sales/${editingSale.id}`, requestData);
+                setFeedbackMessage({ type: 'success', text: 'Sale updated successfully' });
+            } else {
+                // Create new sale
+                await api.post('/fish-sales', requestData);
+                setFeedbackMessage({ type: 'success', text: 'Sale created successfully' });
+            }
 
             setIsAddModalOpen(false);
+            setEditingSale(null);
             setFormData({
                 date: new Date().toISOString().slice(0, 16),
                 buyer_name: ''
@@ -226,10 +279,97 @@ export default function SalesPage() {
                 rate_per_unit: 0,
                 amount: 0
             }]);
+            setEntryMode('detailed');
             fetchData();
-        } catch (error) {
-            console.error('Failed to add sale', error);
+
+            setTimeout(() => setFeedbackMessage(null), 3000);
+        } catch (error: any) {
+            console.error('Failed to save sale', error);
+            const errorMsg = error.response?.data?.detail || 'Failed to save sale';
+            setFeedbackMessage({ type: 'error', text: errorMsg });
+            setTimeout(() => setFeedbackMessage(null), 5000);
         }
+    };
+
+    const handleConfirmConversion = async () => {
+        if (!pendingSubmit) return;
+
+        try {
+            if (editingSale) {
+                await api.put(`/fish-sales/${editingSale.id}`, pendingSubmit);
+                setFeedbackMessage({ type: 'success', text: 'Sale updated successfully' });
+            }
+
+            setIsAddModalOpen(false);
+            setEditingSale(null);
+            setFormData({
+                date: new Date().toISOString().slice(0, 16),
+                buyer_name: ''
+            });
+            setSimpleFormData({
+                total_amount: ''
+            });
+            setSaleItems([{
+                pond_id: 0,
+                quantity: 0,
+                unit_id: 0,
+                rate_per_unit: 0,
+                amount: 0
+            }]);
+            setEntryMode('detailed');
+            fetchData();
+            setPendingSubmit(null);
+
+            setTimeout(() => setFeedbackMessage(null), 3000);
+        } catch (error: any) {
+            console.error('Failed to save sale', error);
+            const errorMsg = error.response?.data?.detail || 'Failed to save sale';
+            setFeedbackMessage({ type: 'error', text: errorMsg });
+            setTimeout(() => setFeedbackMessage(null), 5000);
+        }
+    };
+
+    const handleEditSale = async (sale: FishSale) => {
+        console.log('Editing sale:', sale);
+        console.log('Sale items:', sale.items);
+
+        setEditingSale(sale);
+        setFormData({
+            date: new Date(sale.date).toISOString().slice(0, 16),
+            buyer_name: sale.buyer_name || ''
+        });
+
+        // Determine entry mode based on sale_type
+        if (sale.sale_type === 'detailed') {
+            console.log('Setting to detailed mode based on sale_type');
+            setEntryMode('detailed');
+            if (sale.items && sale.items.length > 0) {
+                setSaleItems(sale.items.map(item => ({
+                    pond_id: item.pond_id,
+                    quantity: item.quantity,
+                    unit_id: item.unit_id,
+                    rate_per_unit: item.rate_per_unit,
+                    amount: item.amount
+                })));
+            } else {
+                // Should not happen for detailed entry, but handle gracefully
+                setSaleItems([{
+                    pond_id: 0,
+                    quantity: 0,
+                    unit_id: 0,
+                    rate_per_unit: 0,
+                    amount: 0
+                }]);
+            }
+        } else {
+            console.log('Setting to simple mode based on sale_type');
+            setEntryMode('simple');
+            setSimpleFormData({
+                total_amount: sale.total_amount.toString()
+            });
+        }
+
+        setIsAddModalOpen(true);
     };
 
     const handleDelete = async (id: number) => {
@@ -247,15 +387,31 @@ export default function SalesPage() {
 
     return (
         <div className="space-y-6">
+            {/* Feedback Message */}
+            {feedbackMessage && (
+                <div className={`p-4 rounded-md ${feedbackMessage.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                    {feedbackMessage.text}
+                </div>
+            )}
+
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-900">Fish Sales (মাছ বিক্রি)</h1>
-                <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Sale
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={fetchData}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        Refresh
+                    </button>
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Sale
+                    </button>
+                </div>
             </div>
 
             {/* Filter Controls */}
@@ -389,12 +545,20 @@ export default function SalesPage() {
                                             ৳{sale.total_amount.toLocaleString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                            <button
-                                                onClick={() => handleDelete(sale.id)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => handleEditSale(sale)}
+                                                    className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(sale.id)}
+                                                    className="text-gray-400 hover:text-red-600 transition-colors"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -404,11 +568,27 @@ export default function SalesPage() {
                 </div>
             </div>
 
-            {/* Add Sale Modal */}
+            {/* Add/Edit Sale Modal */}
             <Modal
                 isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                title="Add Fish Sale"
+                onClose={() => {
+                    setIsAddModalOpen(false);
+                    setEditingSale(null);
+                    setFormData({
+                        date: new Date().toISOString().slice(0, 16),
+                        buyer_name: ''
+                    });
+                    setSimpleFormData({ total_amount: '' });
+                    setSaleItems([{
+                        pond_id: 0,
+                        quantity: 0,
+                        unit_id: 0,
+                        rate_per_unit: 0,
+                        amount: 0
+                    }]);
+                    setEntryMode('detailed');
+                }}
+                title={editingSale ? "Edit Fish Sale" : "Add Fish Sale"}
             >
                 <form onSubmit={handleAddSale} className="space-y-4">
                     {/* Entry Mode Toggle */}
@@ -491,7 +671,7 @@ export default function SalesPage() {
                                             onClick={() => removeSaleItem(index)}
                                             className="absolute top-2 right-2 text-gray-400 hover:text-red-600"
                                         >
-                                            <X className="h-4 w-4" />
+                                            <Trash2 className="h-4 w-4" />
                                         </button>
                                     )}
                                     <div className="grid grid-cols-2 gap-3">
@@ -574,10 +754,25 @@ export default function SalesPage() {
                         type="submit"
                         className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:text-sm"
                     >
-                        Add Sale
+                        {editingSale ? 'Update Sale' : 'Add Sale'}
                     </button>
                 </form>
             </Modal>
+
+            {/* Confirmation Modal for Detailed to Simple Conversion */}
+            <ConfirmModal
+                isOpen={showConfirmModal}
+                onClose={() => {
+                    setShowConfirmModal(false);
+                    setPendingSubmit(null);
+                }}
+                onConfirm={handleConfirmConversion}
+                title="Warning: Data Loss"
+                message="You are updating a Detailed Entry as a Simple Entry. All detailed items will be permanently deleted. This action cannot be undone. Do you want to continue?"
+                confirmText="Yes, Convert to Simple"
+                cancelText="Cancel"
+                type="warning"
+            />
         </div >
     );
 }

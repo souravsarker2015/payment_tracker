@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Plus, Trash2, MapPin } from 'lucide-react';
+import { Plus, Trash2, MapPin, Eye } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface Pond {
@@ -13,6 +14,7 @@ interface Pond {
 }
 
 export default function PondsPage() {
+    const router = useRouter();
     const [ponds, setPonds] = useState<Pond[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -101,6 +103,13 @@ export default function PondsPage() {
                                     </div>
                                 )}
                             </div>
+                            <button
+                                onClick={() => router.push(`/gher/ponds/${pond.id}`)}
+                                className="mt-4 w-full inline-flex justify-center items-center px-4 py-2 border border-indigo-600 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                            </button>
                         </div>
                     ))
                 )}

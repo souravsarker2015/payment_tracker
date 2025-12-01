@@ -21,6 +21,7 @@ class Unit(SQLModel, table=True):
     
     # Relationships
     sale_items: List["FishSaleItem"] = Relationship(back_populates="unit")
+    pond_feeds: List["PondFeed"] = Relationship(back_populates="unit")
 
 class Pond(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -32,6 +33,7 @@ class Pond(SQLModel, table=True):
     # Relationships
     labor_costs: List["LaborCost"] = Relationship(back_populates="pond")
     sale_items: List["FishSaleItem"] = Relationship(back_populates="pond")
+    pond_feeds: List["PondFeed"] = Relationship(back_populates="pond")
 
 class Supplier(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -42,6 +44,7 @@ class Supplier(SQLModel, table=True):
     
     # Relationships
     transactions: List["SupplierTransaction"] = Relationship(back_populates="supplier")
+    pond_feeds: List["PondFeed"] = Relationship(back_populates="supplier")
 
 class SupplierTransaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -53,6 +56,23 @@ class SupplierTransaction(SQLModel, table=True):
     
     # Relationships
     supplier: Optional[Supplier] = Relationship(back_populates="transactions")
+
+class PondFeed(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pond_id: int = Field(foreign_key="pond.id")
+    supplier_id: int = Field(foreign_key="supplier.id")
+    date: datetime
+    quantity: float
+    unit_id: int = Field(foreign_key="unit.id")
+    price_per_unit: float
+    total_amount: float
+    description: Optional[str] = None
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    pond: Optional[Pond] = Relationship(back_populates="pond_feeds")
+    supplier: Optional[Supplier] = Relationship(back_populates="pond_feeds")
+    unit: Optional[Unit] = Relationship(back_populates="pond_feeds")
 
 class LaborCost(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -70,6 +90,7 @@ class FishSale(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     date: datetime
     buyer_name: Optional[str] = None
+    sale_type: str = Field(default="detailed")  # 'simple' or 'detailed'
     total_amount: float
     total_weight: Optional[float] = None
     user_id: int = Field(foreign_key="user.id")
