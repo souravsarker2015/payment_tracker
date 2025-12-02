@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { LayoutDashboard, Users, LogOut, Menu, X, BarChart3, CreditCard, Wallet, Receipt, PieChart } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Menu, X, BarChart3, CreditCard, Wallet, Receipt, PieChart, Fish, DollarSign, Building2 } from 'lucide-react';
 import { useState } from 'react';
 
 export default function DashboardLayout({
@@ -64,6 +64,7 @@ export default function DashboardLayout({
                             <PieChart className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
                             Expenses Overview
                         </Link>
+
                     </div>
                     <Link
                         href="/creditors"
@@ -97,6 +98,45 @@ export default function DashboardLayout({
                         <Receipt className="mr-3 h-5 w-5" />
                         Expenses
                     </Link>
+
+                    {/* Income Section */}
+                    <div className="space-y-1">
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-2">
+                            Income
+                        </div>
+                        <Link
+                            href="/income"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <BarChart3 className="mr-3 h-4 w-4" />
+                            Dashboard
+                        </Link>
+                        <Link
+                            href="/income/persons"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <Users className="mr-3 h-4 w-4" />
+                            Persons
+                        </Link>
+                        <Link
+                            href="/income/organizations"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <Building2 className="mr-3 h-4 w-4" />
+                            Organizations
+                        </Link>
+                        <Link
+                            href="/income/records"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <DollarSign className="mr-3 h-4 w-4" />
+                            Records
+                        </Link>
+                    </div>
 
                     {/* Gher Section */}
                     <div className="space-y-1">

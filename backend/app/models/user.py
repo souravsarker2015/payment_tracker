@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from .debtor import Debtor
     from .contributor import Contributor
     from .expense import Expense, ExpenseType
+    from .income import Person, Organization, Income
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -17,3 +18,6 @@ class User(SQLModel, table=True):
     expense_types: List["ExpenseType"] = Relationship(back_populates="user")
     expenses: List["Expense"] = Relationship(back_populates="user")
     contributors: List["Contributor"] = Relationship(back_populates="user")
+    persons: List["Person"] = Relationship(back_populates="user")
+    organizations: List["Organization"] = Relationship(back_populates="user")
+    incomes: List["Income"] = Relationship(back_populates="user")
