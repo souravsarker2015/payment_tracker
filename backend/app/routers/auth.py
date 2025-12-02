@@ -51,9 +51,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
 @router.post("/refresh")
 def refresh_access_token(request: RefreshTokenRequest):
     """Exchange a refresh token for a new access token"""
+    print(f"[Token Refresh] Received refresh request")
+    
     payload = verify_token(request.refresh_token, token_type="refresh")
     
     if not payload:
+        print(f"[Token Refresh] Invalid or expired refresh token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
@@ -62,6 +65,7 @@ def refresh_access_token(request: RefreshTokenRequest):
     
     email = payload.get("sub")
     if not email:
+        print(f"[Token Refresh] No email in token payload")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
@@ -69,16 +73,13 @@ def refresh_access_token(request: RefreshTokenRequest):
     
     # Create new access token
     new_access_token = create_access_token(data={"sub": email})
+    print(f"[Token Refresh] Successfully created new access token for {email}")
     
     return {
         "access_token": new_access_token,
         "token_type": "bearer"
     }
 
-    return {
-        "access_token": new_access_token,
-        "token_type": "bearer"
-    }
 
 class ForgotPasswordRequest(BaseModel):
     username: str

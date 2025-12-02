@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { Plus, Trash2, MapPin, Eye } from 'lucide-react';
 import Modal from '@/components/Modal';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Pond {
     id: number;
@@ -60,6 +61,10 @@ export default function PondsPage() {
             console.error('Failed to delete pond', error);
         }
     };
+
+    if (loading) {
+        return <LoadingSpinner message="Loading ponds..." />;
+    }
 
     return (
         <div className="space-y-6">

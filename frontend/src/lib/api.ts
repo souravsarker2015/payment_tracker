@@ -61,12 +61,14 @@ api.interceptors.response.use(
 
             try {
                 // Try to refresh the access token
+                console.log('[Token Refresh] Attempting to refresh access token...');
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
                 const response = await axios.post(`${apiUrl}/refresh`, {
                     refresh_token: refreshToken
                 });
 
                 const newAccessToken = response.data.access_token;
+                console.log('[Token Refresh] Successfully refreshed access token');
                 localStorage.setItem('token', newAccessToken);
 
                 // Update the authorization header
@@ -78,15 +80,18 @@ api.interceptors.response.use(
 
                 // Retry the original request
                 return api(originalRequest);
-            } catch (refreshError) {
+            } catch (refreshError: any) {
                 // Refresh token is also expired or invalid
+                console.error('[Token Refresh] Failed to refresh token:', refreshError.response?.data || refreshError.message);
                 processQueue(refreshError, null);
                 isRefreshing = false;
-                
+
                 localStorage.removeItem('token');
                 localStorage.removeItem('refreshToken');
+
+                console.log('[Token Refresh] Redirecting to login...');
                 window.location.href = '/login';
-                
+
                 return Promise.reject(refreshError);
             }
         }

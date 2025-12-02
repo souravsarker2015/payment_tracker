@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { TrendingUp, TrendingDown, DollarSign, Fish, Activity, Calendar } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface DashboardStats {
     summary: {
@@ -135,11 +136,7 @@ export default function DashboardPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <div className="text-gray-500">Loading dashboard...</div>
-            </div>
-        );
+        return <LoadingSpinner message="Loading dashboard..." />;
     }
 
     if (!stats) {

@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Pond {
     id: number;

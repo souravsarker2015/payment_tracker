@@ -15,6 +15,7 @@ export default function DashboardLayout({
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         router.push('/login');
     };
 
