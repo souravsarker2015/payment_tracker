@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, Building2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Building2, ChevronRight } from 'lucide-react';
 import Modal from '@/components/Modal';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -199,52 +200,55 @@ export default function OrganizationsPage() {
             <div className="bg-white shadow overflow-hidden sm:rounded-md">
                 <ul className="divide-y divide-gray-200">
                     {organizations.map((org) => (
-                        <li key={org.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50 flex items-center justify-between">
-                            <div className="flex-1 block">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        <div className="p-2 bg-orange-50 rounded-full mr-3">
-                                            <Building2 className="h-5 w-5 text-orange-600" />
+                        <li key={org.id} className="px-4 py-4 sm:px-6 hover:bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <Link href={`/income/organizations/${org.id}`} className="flex-1 block">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center">
+                                            <div className="p-2 bg-orange-50 rounded-full mr-3">
+                                                <Building2 className="h-5 w-5 text-orange-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-orange-600 truncate hover:underline">{org.name}</p>
+                                                <div className="mt-1 flex flex-col space-y-1">
+                                                    {org.address && (
+                                                        <p className="flex items-center text-sm text-gray-500">
+                                                            📍 {org.address}
+                                                        </p>
+                                                    )}
+                                                    {(org.contact_person || org.phone) && (
+                                                        <p className="flex items-center text-sm text-gray-500">
+                                                            👤 {org.contact_person} {org.phone && `• 📞 ${org.phone}`}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-sm font-medium text-orange-600 truncate">{org.name}</p>
-                                    </div>
-                                    <div className="ml-2 flex-shrink-0 flex">
-                                        <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${org.is_active
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {org.is_active ? 'Active' : 'Inactive'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="mt-2 sm:flex sm:justify-between">
-                                    <div className="sm:flex flex-col space-y-1 ml-12">
-                                        {org.address && (
-                                            <p className="flex items-center text-sm text-gray-500">
-                                                📍 {org.address}
+                                        <div className="ml-2 flex items-center space-x-2">
+                                            <p className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${org.is_active
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {org.is_active ? 'Active' : 'Inactive'}
                                             </p>
-                                        )}
-                                        {(org.contact_person || org.phone) && (
-                                            <p className="flex items-center text-sm text-gray-500">
-                                                👤 {org.contact_person} {org.phone && `• 📞 ${org.phone}`}
-                                            </p>
-                                        )}
+                                            <ChevronRight className="h-5 w-5 text-gray-400" />
+                                        </div>
                                     </div>
+                                </Link>
+                                <div className="flex items-center space-x-2 ml-4">
+                                    <button
+                                        onClick={() => openEditModal(org)}
+                                        className="p-2 text-gray-400 hover:text-orange-600"
+                                    >
+                                        <Edit2 className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(org.id)}
+                                        className="p-2 text-gray-400 hover:text-red-600"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
                                 </div>
-                            </div>
-                            <div className="flex items-center space-x-2 ml-4">
-                                <button
-                                    onClick={() => openEditModal(org)}
-                                    className="p-2 text-gray-400 hover:text-orange-600"
-                                >
-                                    <Edit2 className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(org.id)}
-                                    className="p-2 text-gray-400 hover:text-red-600"
-                                >
-                                    <Trash2 className="h-5 w-5" />
-                                </button>
                             </div>
                         </li>
                     ))}
