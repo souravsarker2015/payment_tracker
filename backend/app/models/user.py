@@ -4,6 +4,7 @@ from sqlmodel import Field, SQLModel, Relationship
 if TYPE_CHECKING:
     from .creditor import Creditor
     from .debtor import Debtor
+    from .contributor import Contributor
     from .expense import Expense, ExpenseType
 
 class User(SQLModel, table=True):
@@ -15,3 +16,4 @@ class User(SQLModel, table=True):
     debtors: List["Debtor"] = Relationship(back_populates="user")
     expense_types: List["ExpenseType"] = Relationship(back_populates="user")
     expenses: List["Expense"] = Relationship(back_populates="user")
+    contributors: List["Contributor"] = Relationship(back_populates="user")

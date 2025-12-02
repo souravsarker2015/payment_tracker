@@ -51,6 +51,13 @@ export default function DashboardLayout({
                             Debtors Overview
                         </Link>
                         <Link
+                            href="/dashboard/contributors"
+                            className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        >
+                            <Users className="mr-3 h-5 w-5 text-gray-400 group-hover:text-gray-500" />
+                            Contributors Overview
+                        </Link>
+                        <Link
                             href="/dashboard/expenses"
                             className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         >
@@ -73,6 +80,14 @@ export default function DashboardLayout({
                     >
                         <Wallet className="mr-3 h-5 w-5" />
                         Debtors
+                    </Link>
+                    <Link
+                        href="/contributors"
+                        className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                        onClick={() => setIsSidebarOpen(false)}
+                    >
+                        <Users className="mr-3 h-5 w-5" />
+                        Contributors
                     </Link>
                     <Link
                         href="/expenses"
