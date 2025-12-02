@@ -126,31 +126,40 @@ def read_fish_sales(
     sales = session.exec(query).all()
     
     print(f"Found {len(sales)} sales")
-    for s in sales:
-        print(f"Sale {s.id} has {len(s.items)} items")
     
-    # Convert to response model
-    return [
-        FishSaleResponse(
-            id=sale.id,
-            date=sale.date.isoformat(),
-            buyer_name=sale.buyer_name,
-            sale_type=sale.sale_type,
-            total_amount=sale.total_amount,
-            total_weight=sale.total_weight,
-            items=[
-                FishSaleItemResponse(
-                    id=item.id,
-                    sale_id=item.sale_id,
-                    pond_id=item.pond_id,
-                    quantity=item.quantity,
-                    unit_id=item.unit_id,
-                    rate_per_unit=item.rate_per_unit,
-                    amount=item.amount
-                ) for item in sale.items
-            ]
-        ) for sale in sales
-    ]
+    # Convert to response model with error handling
+    result = []
+    for sale in sales:
+        try:
+            # Ensure items is not None
+            items_list = sale.items if sale.items is not None else []
+            print(f"Sale {sale.id} has {len(items_list)} items")
+            
+            result.append(FishSaleResponse(
+                id=sale.id,
+                date=sale.date.isoformat(),
+                buyer_name=sale.buyer_name,
+                sale_type=sale.sale_type,
+                total_amount=sale.total_amount,
+                total_weight=sale.total_weight,
+                items=[
+                    FishSaleItemResponse(
+                        id=item.id,
+                        sale_id=item.sale_id,
+                        pond_id=item.pond_id,
+                        quantity=item.quantity,
+                        unit_id=item.unit_id,
+                        rate_per_unit=item.rate_per_unit,
+                        amount=item.amount
+                    ) for item in items_list
+                ]
+            ))
+        except Exception as e:
+            print(f"Error processing sale {sale.id}: {str(e)}")
+            # Continue processing other sales
+            continue
+    
+    return result
 
 @router.put("/fish-sales/{sale_id}", response_model=FishSaleResponse)
 async def update_fish_sale(
