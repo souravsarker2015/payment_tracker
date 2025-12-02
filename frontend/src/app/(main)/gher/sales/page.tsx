@@ -65,6 +65,7 @@ export default function SalesPage() {
     const [customEndDate, setCustomEndDate] = useState('');
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+    const [isMobile, setIsMobile] = useState(false);
 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().slice(0, 16),
@@ -90,9 +91,22 @@ export default function SalesPage() {
     const [pendingSubmit, setPendingSubmit] = useState<any>(null);
 
     useEffect(() => {
-        fetchData();
         fetchPonds();
         fetchUnits();
+
+        // Check if mobile
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    useEffect(() => {
+        fetchData();
     }, [filterMode, customStartDate, customEndDate, selectedYear, selectedMonth]);
 
     const getDateRange = () => {
@@ -633,23 +647,27 @@ export default function SalesPage() {
                         }
 
                         return (
-                            <ResponsiveContainer width="100%" height={300}>
+                            <ResponsiveContainer width="100%" height={300} minWidth={250}>
                                 <PieChart>
                                     <Pie
                                         data={chartData}
                                         cx="50%"
                                         cy="50%"
                                         labelLine={false}
-                                        label={({ name, percent }: any) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
-                                        outerRadius={80}
+                                        outerRadius={isMobile ? 60 : 80}
                                         fill="#8884d8"
                                         dataKey="amount"
+                                        label={!isMobile ? ({ name, percent }: any) => `${name} (${((percent || 0) * 100).toFixed(0)}%)` : false}
                                     >
                                         {chartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
                                     <Tooltip formatter={(value: number) => `৳${value.toLocaleString()}`} />
+                                    <Legend
+                                        wrapperStyle={{ fontSize: '11px' }}
+                                        formatter={(value, entry: any) => `${entry.payload.name}`}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         );

@@ -37,9 +37,20 @@ export default function DebtorsOverviewPage() {
     });
     const [debtorsWithBalance, setDebtorsWithBalance] = useState<DebtorWithBalance[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         fetchStats();
+
+        // Check if mobile
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+
+        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     const fetchStats = async () => {
@@ -169,27 +180,29 @@ export default function DebtorsOverviewPage() {
                 <div className="bg-white shadow-sm rounded-xl border border-gray-200 p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-6">Active Debtors by Balance</h3>
                     {chartData.length > 0 ? (
-                        <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="h-80 overflow-x-auto">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={300}>
                                 <PieChart>
                                     <Pie
                                         data={chartData}
                                         cx="50%"
                                         cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={100}
+                                        innerRadius={isMobile ? 40 : 50}
+                                        outerRadius={isMobile ? 70 : 80}
                                         fill="#8884d8"
                                         dataKey="value"
-                                        label={(entry: any) => `${entry.name}: ${entry.payload.balance}`}
-                                        onClick={(data) => handleDebtorClick(data.id)}
+                                        label={!isMobile ? (entry: any) => `${entry.name}: ${entry.payload.balance}` : false} onClick={(data) => handleDebtorClick(data.id)}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         {chartData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, 'Balance']} />
-                                    <Legend />
+                                    <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, props.payload.name]} />
+                                    <Legend
+                                        wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
+                                        formatter={(value, entry: any) => `${entry.payload.name}: ${entry.payload.balance}`}
+                                    />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
