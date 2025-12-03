@@ -10,10 +10,11 @@ def fix_sequences():
     This ensures auto-increment IDs work correctly after data imports.
     """
     tables = [
-        'user', 'creditor', 'transaction', 'debtor', 'debtortransaction',
-        'contributor', 'contributortransaction', 'expense_type', 'expense',
-        'pond', 'supplier', 'unit', 'pondfeed', 'laborcost', 'fishsale',
-        'fishsaleitem', 'person', 'organization', 'income'
+        # 'user', 'creditor', 'transaction', 'debtor', 'debtortransaction',
+        # 'contributor', 'contributortransaction', 'expense_type', 'expense',
+        # 'pond', 'supplier', 'unit', 'pondfeed', 'laborcost', 'fishsale',
+        # 'fishsaleitem', 'person', 'organization', 
+        'income'
     ]
     
     try:
@@ -37,5 +38,6 @@ def fix_sequences():
                     pass
             session.commit()
             print("✅ Database sequences synchronized")
+        # Session is automatically closed here
     except Exception as e:
         print(f"⚠️  Sequence sync skipped: {e}")
