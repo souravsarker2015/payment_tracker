@@ -45,19 +45,19 @@ app.include_router(income_dashboard.router)
 def on_startup():
     create_db_and_tables()
     
-    # Fix PostgreSQL sequences (ensures auto-increment works after data imports)
-    try:
-        from app.db_utils import fix_sequences
-        fix_sequences()
-    except Exception as e:
-        print(f"Warning: Failed to fix sequences: {e}")
+    # # Fix PostgreSQL sequences (ensures auto-increment works after data imports)
+    # try:
+    #     from app.db_utils import fix_sequences
+    #     fix_sequences()
+    # except Exception as e:
+    #     print(f"Warning: Failed to fix sequences: {e}")
     
-    # Seed default units if they don't exist
-    try:
-        from app.seed_units import seed_units
-        seed_units()
-    except Exception as e:
-        print(f"Warning: Failed to seed units: {e}")
+    # # Seed default units if they don't exist
+    # try:
+    #     from app.seed_units import seed_units
+    #     seed_units()
+    # except Exception as e:
+    #     print(f"Warning: Failed to seed units: {e}")
 
 @app.get("/")
 def read_root():
