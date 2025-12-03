@@ -63,6 +63,16 @@ export default function DashboardPage() {
     const [creditorsWithBalance, setCreditorsWithBalance] = useState<CreditorWithBalance[]>([]);
     const [debtorsWithBalance, setDebtorsWithBalance] = useState<DebtorWithBalance[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         fetchStats();
@@ -258,11 +268,11 @@ export default function DashboardPage() {
                                             data={creditorChartData}
                                             cx="50%"
                                             cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={100}
+                                            innerRadius={isMobile ? 40 : 60}
+                                            outerRadius={isMobile ? 70 : 100}
                                             fill="#8884d8"
                                             dataKey="value"
-                                            label={(entry: any) => `${entry.name}: ${entry.payload.balance}`}
+                                            label={!isMobile ? (entry: any) => `${entry.name}: ${entry.payload.balance}` : undefined}
                                             onClick={(data) => handleCreditorClick(data.id)}
                                             style={{ cursor: 'pointer' }}
                                         >
@@ -271,7 +281,12 @@ export default function DashboardPage() {
                                             ))}
                                         </Pie>
                                         <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, 'Balance']} />
-                                        <Legend />
+                                        <Legend
+                                            layout={isMobile ? "horizontal" : "vertical"}
+                                            verticalAlign={isMobile ? "bottom" : "middle"}
+                                            align={isMobile ? "center" : "right"}
+                                            wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
@@ -389,11 +404,11 @@ export default function DashboardPage() {
                                             data={debtorChartData}
                                             cx="50%"
                                             cy="50%"
-                                            innerRadius={60}
-                                            outerRadius={100}
+                                            innerRadius={isMobile ? 40 : 60}
+                                            outerRadius={isMobile ? 70 : 100}
                                             fill="#8884d8"
                                             dataKey="value"
-                                            label={(entry: any) => `${entry.name}: ${entry.payload.balance}`}
+                                            label={!isMobile ? (entry: any) => `${entry.name}: ${entry.payload.balance}` : undefined}
                                             onClick={(data) => handleDebtorClick(data.id)}
                                             style={{ cursor: 'pointer' }}
                                         >
@@ -402,7 +417,12 @@ export default function DashboardPage() {
                                             ))}
                                         </Pie>
                                         <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, 'Balance']} />
-                                        <Legend />
+                                        <Legend
+                                            layout={isMobile ? "horizontal" : "vertical"}
+                                            verticalAlign={isMobile ? "bottom" : "middle"}
+                                            align={isMobile ? "center" : "right"}
+                                            wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
+                                        />
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>

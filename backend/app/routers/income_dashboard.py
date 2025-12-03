@@ -112,32 +112,29 @@ def get_income_dashboard_stats(
             curr = m_end
             
     else:
-        # Default: Last 12 months
-        for i in range(12):
-            year = now.year
-            month = now.month - i
-            while month <= 0:
-                month += 12
-                year -= 1
-                
-            current_month_start = datetime(year, month, 1)
+        # No filter: Show all income data grouped by month
+        # Get all income records for this user
+        all_incomes = session.exec(
+            select(Income)
+            .where(Income.user_id == current_user.id)
+            .order_by(Income.date)
+        ).all()
+        
+        if all_incomes:
+            # Group by month
+            monthly_data = {}
+            for income in all_incomes:
+                month_key = income.date.strftime("%Y-%m")
+                month_label = income.date.strftime("%b %Y")
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = {"month": month_label, "amount": 0}
+                monthly_data[month_key]["amount"] += income.amount
             
-            if month == 12:
-                next_month_start = datetime(year + 1, 1, 1)
-            else:
-                next_month_start = datetime(year, month + 1, 1)
-                
-            amount = session.exec(
-                select(func.sum(Income.amount))
-                .where(Income.user_id == current_user.id)
-                .where(Income.date >= current_month_start)
-                .where(Income.date < next_month_start)
-            ).one() or 0
-            
-            monthly_trend.insert(0, {
-                "month": current_month_start.strftime("%b %Y"),
-                "amount": float(amount)
-            })
+            # Convert to list and sort by month
+            monthly_trend = sorted(
+                [{"month": v["month"], "amount": float(v["amount"])} for v in monthly_data.values()],
+                key=lambda x: datetime.strptime(x["month"], "%b %Y")
+            )
 
     # 3. Breakdown by Income Type
     type_breakdown_query = select(Income.income_type, func.sum(Income.amount))
