@@ -282,9 +282,9 @@ export default function DashboardPage() {
                                         </Pie>
                                         <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, 'Balance']} />
                                         <Legend
-                                            layout={isMobile ? "horizontal" : "vertical"}
-                                            verticalAlign={isMobile ? "bottom" : "middle"}
-                                            align={isMobile ? "center" : "right"}
+                                            layout="horizontal"
+                                            verticalAlign="bottom"
+                                            align="center"
                                             wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
                                             formatter={(value: string, entry: any) => `${value}: ${entry.payload.balance}`}
                                         />
@@ -419,9 +419,9 @@ export default function DashboardPage() {
                                         </Pie>
                                         <Tooltip formatter={(value: number, name: string, props: any) => [props.payload.balance, 'Balance']} />
                                         <Legend
-                                            layout={isMobile ? "horizontal" : "vertical"}
-                                            verticalAlign={isMobile ? "bottom" : "middle"}
-                                            align={isMobile ? "center" : "right"}
+                                            layout="horizontal"
+                                            verticalAlign="bottom"
+                                            align="center"
                                             wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
                                             formatter={(value: string, entry: any) => `${value}: ${entry.payload.balance}`}
                                         />
