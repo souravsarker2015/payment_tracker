@@ -286,6 +286,7 @@ export default function DashboardPage() {
                                             verticalAlign={isMobile ? "bottom" : "middle"}
                                             align={isMobile ? "center" : "right"}
                                             wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
+                                            formatter={(value: string, entry: any) => `${value}: ${entry.payload.balance}`}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -422,6 +423,7 @@ export default function DashboardPage() {
                                             verticalAlign={isMobile ? "bottom" : "middle"}
                                             align={isMobile ? "center" : "right"}
                                             wrapperStyle={{ fontSize: isMobile ? '10px' : '12px' }}
+                                            formatter={(value: string, entry: any) => `${value}: ${entry.payload.balance}`}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
