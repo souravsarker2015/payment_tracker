@@ -44,6 +44,14 @@ app.include_router(income_dashboard.router)
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
+    
+    # Fix PostgreSQL sequences (ensures auto-increment works after data imports)
+    try:
+        from app.db_utils import fix_sequences
+        fix_sequences()
+    except Exception as e:
+        print(f"Warning: Failed to fix sequences: {e}")
+    
     # Seed default units if they don't exist
     try:
         from app.seed_units import seed_units
