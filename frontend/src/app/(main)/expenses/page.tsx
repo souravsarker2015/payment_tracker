@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Trash2, Settings, Calendar, Filter, ChevronDown, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Settings, Calendar, Filter, ChevronDown, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface ExpenseType {
@@ -37,6 +37,7 @@ export default function ExpensesPage() {
     // Modal States
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
     const [isManageTypesOpen, setIsManageTypesOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -123,7 +124,18 @@ export default function ExpensesPage() {
         }
     };
 
-    const handleAddExpense = async (e: React.FormEvent) => {
+    const handleEditExpense = (expense: Expense) => {
+        setEditingExpense(expense);
+        setFormData({
+            amount: expense.amount.toString(),
+            description: expense.description || '',
+            date: new Date(expense.date).toISOString().slice(0, 16),
+            expense_type_id: expense.expense_type_id ? expense.expense_type_id.toString() : ''
+        });
+        setIsAddExpenseOpen(true);
+    };
+
+    const handleSubmitExpense = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const payload = {
@@ -133,18 +145,28 @@ export default function ExpensesPage() {
                 expense_type_id: formData.expense_type_id ? parseInt(formData.expense_type_id) : null
             };
 
-            await api.post('/expenses', payload);
-            setIsAddExpenseOpen(false);
-            setFormData({
-                amount: '',
-                description: '',
-                date: new Date().toISOString().slice(0, 16),
-                expense_type_id: ''
-            });
+            if (editingExpense) {
+                await api.put(`/expenses/${editingExpense.id}`, payload);
+            } else {
+                await api.post('/expenses', payload);
+            }
+
+            closeExpenseModal();
             fetchData();
         } catch (error) {
-            console.error('Failed to add expense', error);
+            console.error('Failed to submit expense', error);
         }
+    };
+
+    const closeExpenseModal = () => {
+        setIsAddExpenseOpen(false);
+        setEditingExpense(null);
+        setFormData({
+            amount: '',
+            description: '',
+            date: new Date().toISOString().slice(0, 16),
+            expense_type_id: ''
+        });
     };
 
     const handleDeleteExpense = async (id: number) => {
@@ -364,12 +386,22 @@ export default function ExpensesPage() {
                                                 {expense.amount.toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() => handleDeleteExpense(expense.id)}
-                                                    className="text-gray-400 hover:text-red-600 transition-colors"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
+                                                <div className="flex justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => handleEditExpense(expense)}
+                                                        className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                                        title="Edit Expense"
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteExpense(expense.id)}
+                                                        className="text-gray-400 hover:text-red-600 transition-colors"
+                                                        title="Delete Expense"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     );
@@ -383,10 +415,10 @@ export default function ExpensesPage() {
             {/* Add Expense Modal */}
             <Modal
                 isOpen={isAddExpenseOpen}
-                onClose={() => setIsAddExpenseOpen(false)}
-                title="Add New Expense"
+                onClose={closeExpenseModal}
+                title={editingExpense ? "Edit Expense" : "Add New Expense"}
             >
-                <form onSubmit={handleAddExpense} className="space-y-4">
+                <form onSubmit={handleSubmitExpense} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Amount</label>
                         <input
@@ -480,7 +512,7 @@ export default function ExpensesPage() {
                             type="submit"
                             className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm"
                         >
-                            Add Expense
+                            {editingExpense ? "Update Expense" : "Add Expense"}
                         </button>
                     </div>
                 </form>
