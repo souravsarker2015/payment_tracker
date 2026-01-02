@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, Tag } from 'lucide-react';
+import { Plus, Trash2, Edit2, Tag, Eye } from 'lucide-react';
 import Modal from '@/components/Modal';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -12,6 +13,7 @@ interface FishCategory {
 }
 
 export default function FishCategoriesPage() {
+    const router = useRouter();
     const [categories, setCategories] = useState<FishCategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,29 +95,38 @@ export default function FishCategoriesPage() {
                     </div>
                 ) : (
                     categories.map((category) => (
-                        <div key={category.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-indigo-50 rounded-lg">
-                                    <Tag className="h-5 w-5 text-indigo-600" />
+                        <div key={category.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center space-x-3">
+                                    <div className="p-2 bg-indigo-50 rounded-lg">
+                                        <Tag className="h-5 w-5 text-indigo-600" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={() => handleOpenModal(category)}
+                                        className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
+                                        title="Edit Category"
+                                    >
+                                        <Edit2 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(category.id)}
+                                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                                        title="Delete Category"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() => handleOpenModal(category)}
-                                    className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
-                                    title="Edit Category"
-                                >
-                                    <Edit2 className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(category.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                                    title="Delete Category"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => router.push(`/gher/fish-categories/${category.id}`)}
+                                className="w-full inline-flex justify-center items-center px-4 py-2 border border-indigo-600 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                            </button>
                         </div>
                     ))
                 )}
