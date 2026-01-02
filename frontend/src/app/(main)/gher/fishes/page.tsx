@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, Fish as FishIcon, Layers, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Fish as FishIcon, Layers, Check, X, Eye } from 'lucide-react';
 import Modal from '@/components/Modal';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -18,6 +19,7 @@ interface Fish {
 }
 
 export default function FishesPage() {
+    const router = useRouter();
     const [fishes, setFishes] = useState<Fish[]>([]);
     const [categories, setCategories] = useState<FishCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -165,10 +167,17 @@ export default function FishesPage() {
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex items-center text-sm text-gray-500">
+                            <div className="flex items-center text-sm text-gray-500 mb-3">
                                 <Layers className="h-4 w-4 mr-2" />
                                 Category: <span className="ml-1 font-medium text-gray-700">{getCategoryName(fish.category_id)}</span>
                             </div>
+                            <button
+                                onClick={() => router.push(`/gher/fishes/${fish.id}`)}
+                                className="w-full inline-flex justify-center items-center px-4 py-2 border border-indigo-600 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            >
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                            </button>
                         </div>
                     ))
                 )}
