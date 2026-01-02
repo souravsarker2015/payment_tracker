@@ -191,6 +191,22 @@ export default function DashboardLayout({
                             </svg>
                             Sales (বিক্রি)
                         </Link>
+                        <Link
+                            href="/gher/fish-categories"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <PieChart className="mr-3 h-4 w-4" />
+                            Fish Categories (মাছের ধরন)
+                        </Link>
+                        <Link
+                            href="/gher/fishes"
+                            className="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-300 hover:bg-slate-700 hover:text-white transition-colors"
+                            onClick={() => setIsSidebarOpen(false)}
+                        >
+                            <Fish className="mr-3 h-4 w-4" />
+                            Fishes (মাছ)
+                        </Link>
                     </div>
                 </nav>
             </div>

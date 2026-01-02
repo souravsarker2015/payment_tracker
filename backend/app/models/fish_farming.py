@@ -86,6 +86,24 @@ class LaborCost(SQLModel, table=True):
     # Relationships
     pond: Optional[Pond] = Relationship(back_populates="labor_costs")
 
+class FishCategory(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    fish: List["Fish"] = Relationship(back_populates="category")
+
+class Fish(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    category_id: Optional[int] = Field(default=None, foreign_key="fishcategory.id", nullable=True) # Optional category
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    category: Optional[FishCategory] = Relationship(back_populates="fish")
+    sale_items: List["FishSaleItem"] = Relationship(back_populates="fish")
+
 class FishSale(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     date: datetime
@@ -101,7 +119,8 @@ class FishSale(SQLModel, table=True):
 class FishSaleItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     sale_id: int = Field(foreign_key="fishsale.id")
-    pond_id: int = Field(foreign_key="pond.id")
+    pond_id: Optional[int] = Field(default=None, foreign_key="pond.id", nullable=True) # Optional pond
+    fish_id: Optional[int] = Field(default=None, foreign_key="fish.id", nullable=True) # Link to Fish
     quantity: float  # Changed from weight_kg to quantity
     unit_id: int = Field(foreign_key="unit.id")  # Reference to Unit
     rate_per_unit: float  # Changed from rate_per_kg
@@ -111,3 +130,4 @@ class FishSaleItem(SQLModel, table=True):
     sale: Optional[FishSale] = Relationship(back_populates="items")
     pond: Optional[Pond] = Relationship(back_populates="sale_items")
     unit: Optional[Unit] = Relationship(back_populates="sale_items")
+    fish: Optional[Fish] = Relationship(back_populates="sale_items")

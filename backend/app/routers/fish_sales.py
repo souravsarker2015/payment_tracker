@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, func
 from pydantic import BaseModel
@@ -10,9 +10,10 @@ from app.models.fish_farming import FishSale, FishSaleItem
 router = APIRouter(tags=["fish_sales"])
 
 class FishSaleItemCreate(BaseModel):
-    pond_id: int
+    pond_id: Optional[int] = None
     quantity: float
     unit_id: int
+    fish_id: Optional[int] = None
     rate_per_unit: float
     amount: float
 
@@ -27,9 +28,10 @@ class FishSaleCreate(BaseModel):
 class FishSaleItemResponse(BaseModel):
     id: int
     sale_id: int
-    pond_id: int
+    pond_id: Optional[int] = None
     quantity: float
     unit_id: int
+    fish_id: Optional[int] = None
     rate_per_unit: float
     amount: float
     
@@ -79,6 +81,7 @@ def create_fish_sale(
             pond_id=item_data.pond_id,
             quantity=item_data.quantity,
             unit_id=item_data.unit_id,
+            fish_id=item_data.fish_id, # Added fish_id
             rate_per_unit=item_data.rate_per_unit,
             amount=item_data.amount
         )
@@ -149,6 +152,7 @@ def read_fish_sales(
                         pond_id=item.pond_id,
                         quantity=item.quantity,
                         unit_id=item.unit_id,
+                        fish_id=item.fish_id, # Added fish_id
                         rate_per_unit=item.rate_per_unit,
                         amount=item.amount
                     ) for item in items_list
@@ -219,6 +223,7 @@ async def update_fish_sale(
                 pond_id=item_data.pond_id,
                 quantity=item_data.quantity,
                 unit_id=item_data.unit_id,
+                fish_id=item_data.fish_id, # Added fish_id
                 rate_per_unit=item_data.rate_per_unit,
                 amount=item_data.amount
             )
@@ -250,6 +255,7 @@ async def update_fish_sale(
                 pond_id=item.pond_id,
                 quantity=item.quantity,
                 unit_id=item.unit_id,
+                fish_id=item.fish_id, # Added fish_id
                 rate_per_unit=item.rate_per_unit,
                 amount=item.amount
             ) for item in db_sale.items

@@ -21,6 +21,7 @@ interface Unit {
 
 interface SaleItem {
     pond_id: number;
+    fish_id?: number | null;
     quantity: number;
     unit_id: number;
     rate_per_unit: number;
@@ -36,6 +37,7 @@ interface FishSale {
     total_weight?: number;
     items: Array<{
         pond_id: number;
+        fish_id?: number | null;
         quantity: number;
         unit_id: number;
         rate_per_unit: number;
@@ -54,6 +56,7 @@ type FilterMode = 'all' | 'today' | 'week' | 'month' | 'year' | 'select_month' |
 export default function SalesPage() {
     const [sales, setSales] = useState<FishSale[]>([]);
     const [ponds, setPonds] = useState<Pond[]>([]);
+    const [fishes, setFishes] = useState<any[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -79,6 +82,7 @@ export default function SalesPage() {
 
     const [saleItems, setSaleItems] = useState<SaleItem[]>([{
         pond_id: 0,
+        fish_id: null,
         quantity: 0,
         unit_id: 0,
         rate_per_unit: 0,
@@ -92,6 +96,7 @@ export default function SalesPage() {
 
     useEffect(() => {
         fetchPonds();
+        fetchFishes();
         fetchUnits();
 
         // Check if mobile
@@ -198,6 +203,15 @@ export default function SalesPage() {
         }
     };
 
+    const fetchFishes = async () => {
+        try {
+            const response = await api.get('/fishes');
+            setFishes(response.data);
+        } catch (error) {
+            console.error('Failed to fetch fishes', error);
+        }
+    };
+
     const fetchUnits = async () => {
         try {
             const response = await api.get('/units');
@@ -210,6 +224,7 @@ export default function SalesPage() {
     const addSaleItem = () => {
         setSaleItems([...saleItems, {
             pond_id: 0,
+            fish_id: null,
             quantity: 0,
             unit_id: 0,
             rate_per_unit: 0,
@@ -302,6 +317,7 @@ export default function SalesPage() {
             });
             setSaleItems([{
                 pond_id: 0,
+                fish_id: null,
                 quantity: 0,
                 unit_id: 0,
                 rate_per_unit: 0,
@@ -339,6 +355,7 @@ export default function SalesPage() {
             });
             setSaleItems([{
                 pond_id: 0,
+                fish_id: null,
                 quantity: 0,
                 unit_id: 0,
                 rate_per_unit: 0,
@@ -374,6 +391,7 @@ export default function SalesPage() {
             if (sale.items && sale.items.length > 0) {
                 setSaleItems(sale.items.map(item => ({
                     pond_id: item.pond_id,
+                    fish_id: item.fish_id || null,
                     quantity: item.quantity,
                     unit_id: item.unit_id,
                     rate_per_unit: item.rate_per_unit,
@@ -383,6 +401,7 @@ export default function SalesPage() {
                 // Should not happen for detailed entry, but handle gracefully
                 setSaleItems([{
                     pond_id: 0,
+                    fish_id: null,
                     quantity: 0,
                     unit_id: 0,
                     rate_per_unit: 0,
@@ -809,6 +828,7 @@ export default function SalesPage() {
                     setSimpleFormData({ total_amount: '' });
                     setSaleItems([{
                         pond_id: 0,
+                        fish_id: null,
                         quantity: 0,
                         unit_id: 0,
                         rate_per_unit: 0,
@@ -903,6 +923,21 @@ export default function SalesPage() {
                                         </button>
                                     )}
                                     <div className="grid grid-cols-2 gap-3">
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-medium text-gray-700">Fish</label>
+                                            <select
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm p-2 border text-gray-900"
+                                                value={item.fish_id || ''}
+                                                onChange={(e) => updateSaleItem(index, 'fish_id', e.target.value ? parseInt(e.target.value) : null)}
+                                            >
+                                                <option value="">Select fish</option>
+                                                {fishes.map((fish) => (
+                                                    <option key={fish.id} value={fish.id}>
+                                                        {fish.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
                                         <div className="col-span-2">
                                             <label className="block text-xs font-medium text-gray-700">Pond</label>
                                             <select
