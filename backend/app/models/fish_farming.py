@@ -59,7 +59,7 @@ class SupplierTransaction(SQLModel, table=True):
 
 class PondFeed(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    pond_id: int = Field(foreign_key="pond.id")
+    pond_id: Optional[int] = Field(default=None, foreign_key="pond.id", nullable=True)
     supplier_id: int = Field(foreign_key="supplier.id")
     date: datetime
     quantity: float

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.database import get_session
@@ -16,10 +16,11 @@ def create_pond_feed(
 ):
     from datetime import datetime
     
-    # Verify pond belongs to user
-    pond = session.get(Pond, feed.pond_id)
-    if not pond or pond.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Pond not found")
+    # Verify pond belongs to user if pond_id is provided
+    if feed.pond_id:
+        pond = session.get(Pond, feed.pond_id)
+        if not pond or pond.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="Pond not found")
     
     # Verify supplier belongs to user
     supplier = session.get(Supplier, feed.supplier_id)
@@ -41,14 +42,35 @@ def create_pond_feed(
 
 @router.get("/pond-feeds", response_model=List[PondFeed])
 def read_pond_feeds(
-    pond_id: int = None,
+    pond_id: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
+    from datetime import datetime
+    
     query = select(PondFeed).where(PondFeed.user_id == current_user.id)
     
     if pond_id:
         query = query.where(PondFeed.pond_id == pond_id)
+        
+    if start_date:
+        try:
+            start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            query = query.where(PondFeed.date >= start_dt)
+        except ValueError:
+            pass
+            
+    if end_date:
+        try:
+            end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            query = query.where(PondFeed.date <= end_dt)
+        except ValueError:
+            pass
+    
+    # Sort by date descending
+    query = query.order_by(PondFeed.date.desc())
     
     return session.exec(query).all()
 
@@ -66,10 +88,11 @@ def update_pond_feed(
     if not db_feed or db_feed.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Feed record not found")
     
-    # Verify pond belongs to user
-    pond = session.get(Pond, feed_update.pond_id)
-    if not pond or pond.user_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Pond not found")
+    # Verify pond belongs to user if pond_id is provided
+    if feed_update.pond_id:
+        pond = session.get(Pond, feed_update.pond_id)
+        if not pond or pond.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="Pond not found")
     
     # Verify supplier belongs to user
     supplier = session.get(Supplier, feed_update.supplier_id)
