@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
-import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Package, Users, Plus, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, DollarSign, Package, Users, Plus, Trash2, Edit, Receipt } from 'lucide-react';
 import Modal from '@/components/Modal';
 
 interface PondStats {
@@ -52,12 +52,25 @@ export default function PondDetailPage() {
         description: ''
     });
 
+    // Feed Usage State
+    const [feedUsages, setFeedUsages] = useState<any[]>([]);
+    const [isUsageModalOpen, setIsUsageModalOpen] = useState(false);
+    const [editingUsageId, setEditingUsageId] = useState<number | null>(null);
+    const [usageFormData, setUsageFormData] = useState({
+        feed_id: '',
+        date: new Date().toISOString().slice(0, 10),
+        quantity: '',
+        unit_id: '',
+        price_per_unit: '',
+    });
+
     useEffect(() => {
         if (pondId) {
             fetchStats();
             fetchSuppliers();
             fetchUnits();
             fetchFeeds();
+            fetchFeedUsages();
         }
     }, [pondId]);
 
@@ -97,6 +110,90 @@ export default function PondDetailPage() {
         } catch (error) {
             console.error('Failed to fetch feeds', error);
         }
+    };
+
+    const fetchFeedUsages = async () => {
+        try {
+            // We need fish-feeds catalog as well if not loaded but we fetch feeds already? 
+            // Wait, fetchFeeds fetches pond-feeds (purchases). We need fish-feeds (catalog) for the dropdown.
+            // Actually `fetchFeeds` above fetches purchases. We probably need `fish-feeds` for the usage form.
+            // Let's check `fetchSuppliers` etc.
+            // We need to fetch `fish-feeds` catalog for the usage modal separately if not available.
+            // But let's fetch usages first.
+            const res = await api.get(`/feed-usage?pond_id=${pondId}`);
+            setFeedUsages(res.data);
+
+            // Also fetch fish feeds catalog if we haven't
+            const catalogRes = await api.get('/fish-feeds');
+            // We'll store this in a new state or reuse `feeds` name? No `feeds` is used for purchases list.
+            // Let's add `fishFeedCatalog` state.
+            setFishFeedCatalog(catalogRes.data);
+        } catch (error) {
+            console.error('Failed to fetch feed usages', error);
+        }
+    };
+
+    const [fishFeedCatalog, setFishFeedCatalog] = useState<any[]>([]);
+
+    const handleSaveUsage = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const payload = {
+                pond_id: Number(pondId),
+                feed_id: Number(usageFormData.feed_id),
+                date: new Date(usageFormData.date).toISOString(),
+                quantity: Number(usageFormData.quantity),
+                unit_id: Number(usageFormData.unit_id),
+                price_per_unit: Number(usageFormData.price_per_unit),
+            };
+
+            if (editingUsageId) {
+                await api.put(`/feed-usage/${editingUsageId}`, payload);
+            } else {
+                await api.post('/feed-usage', payload);
+            }
+
+            setIsUsageModalOpen(false);
+            setEditingUsageId(null);
+            setUsageFormData(prev => ({ ...prev, quantity: '', price_per_unit: '' }));
+            fetchFeedUsages();
+            // Optionally refresh stats if usage stats are included (not yet)
+        } catch (error) {
+            console.error("Failed to save usage", error);
+            alert("Failed to save usage");
+        }
+    };
+
+    const handleDeleteUsage = async (id: number) => {
+        if (!confirm("Delete usage record?")) return;
+        try {
+            await api.delete(`/feed-usage/${id}`);
+            fetchFeedUsages();
+        } catch (error) {
+            console.error("Failed to delete usage", error);
+        }
+    };
+
+    const openUsageModal = (usage?: any) => {
+        if (usage) {
+            setEditingUsageId(usage.id);
+            setUsageFormData({
+                feed_id: usage.feed_id.toString(),
+                date: new Date(usage.date).toISOString().slice(0, 10),
+                quantity: usage.quantity.toString(),
+                unit_id: usage.unit_id.toString(),
+                price_per_unit: usage.price_per_unit.toString(),
+            });
+        } else {
+            setEditingUsageId(null);
+            setUsageFormData(prev => ({
+                ...prev,
+                quantity: '',
+                price_per_unit: '',
+                date: new Date().toISOString().slice(0, 10)
+            }));
+        }
+        setIsUsageModalOpen(true);
     };
 
     const handleAddFeed = async (e: React.FormEvent) => {
@@ -411,6 +508,130 @@ export default function PondDetailPage() {
                     <p className="text-sm text-gray-500 text-center py-8">No feed purchases yet. Add your first purchase!</p>
                 )}
             </div>
+
+            {/* Daily Feed Usage Section */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Daily Feed Usage (দৈনিক খাবার ব্যবহার)</h3>
+                    <button
+                        onClick={() => openUsageModal()}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Record Usage
+                    </button>
+                </div>
+
+                {feedUsages.length > 0 ? (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Feed</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Quantity</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {feedUsages.map(u => (
+                                    <tr key={u.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(u.date).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {u.feed_name} <span className="text-gray-500 text-xs">{u.feed_brand}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                                            {u.quantity} {u.unit_name}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium text-right">
+                                            ৳{u.total_cost.toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <button onClick={() => openUsageModal(u)} className="text-indigo-600 hover:text-indigo-900 mr-3">
+                                                <Edit className="h-4 w-4" />
+                                            </button>
+                                            <button onClick={() => handleDeleteUsage(u.id)} className="text-red-600 hover:text-red-900">
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500 text-center py-8">No usage records found.</p>
+                )}
+            </div>
+
+            {/* Usage Modal */}
+            <Modal isOpen={isUsageModalOpen} onClose={() => setIsUsageModalOpen(false)} title={editingUsageId ? "Edit Daily Usage" : "Record Daily Usage"}>
+                <form onSubmit={handleSaveUsage} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Date</label>
+                        <input
+                            type="date"
+                            required
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            value={usageFormData.date}
+                            onChange={(e) => setUsageFormData({ ...usageFormData, date: e.target.value })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Feed Type</label>
+                        <select
+                            required
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            value={usageFormData.feed_id}
+                            onChange={(e) => setUsageFormData({ ...usageFormData, feed_id: e.target.value })}
+                        >
+                            <option value="">Select Feed</option>
+                            {fishFeedCatalog.map(f => <option key={f.id} value={f.id}>{f.name} {f.brand ? `(${f.brand})` : ''}</option>)}
+                        </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Quantity</label>
+                            <input
+                                type="number"
+                                required
+                                step="any"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                                value={usageFormData.quantity}
+                                onChange={(e) => setUsageFormData({ ...usageFormData, quantity: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Unit</label>
+                            <select
+                                required
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                                value={usageFormData.unit_id}
+                                onChange={(e) => setUsageFormData({ ...usageFormData, unit_id: e.target.value })}
+                            >
+                                <option value="">Select Unit</option>
+                                {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Price Per Unit</label>
+                        <input
+                            type="number"
+                            required
+                            step="any"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border"
+                            value={usageFormData.price_per_unit}
+                            onChange={(e) => setUsageFormData({ ...usageFormData, price_per_unit: e.target.value })}
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                        <button type="button" onClick={() => setIsUsageModalOpen(false)} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+                        <button type="submit" className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Add/Edit Feed Purchase Modal */}
             <Modal

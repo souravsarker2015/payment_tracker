@@ -21,7 +21,9 @@ class Unit(SQLModel, table=True):
     
     # Relationships
     sale_items: List["FishSaleItem"] = Relationship(back_populates="unit")
-    pond_feeds: List["PondFeed"] = Relationship(back_populates="unit")
+    sale_items: List["FishSaleItem"] = Relationship(back_populates="unit")
+    feed_purchases: List["PondFeedPurchase"] = Relationship(back_populates="unit")
+    feed_usages: List["PondFeedUsage"] = Relationship(back_populates="unit")
 
 class Pond(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -33,7 +35,8 @@ class Pond(SQLModel, table=True):
     # Relationships
     labor_costs: List["LaborCost"] = Relationship(back_populates="pond")
     sale_items: List["FishSaleItem"] = Relationship(back_populates="pond")
-    pond_feeds: List["PondFeed"] = Relationship(back_populates="pond")
+    feed_purchases: List["PondFeedPurchase"] = Relationship(back_populates="pond")
+    feed_usages: List["PondFeedUsage"] = Relationship(back_populates="pond")
 
 class Supplier(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -44,7 +47,7 @@ class Supplier(SQLModel, table=True):
     
     # Relationships
     transactions: List["SupplierTransaction"] = Relationship(back_populates="supplier")
-    pond_feeds: List["PondFeed"] = Relationship(back_populates="supplier")
+    feed_purchases: List["PondFeedPurchase"] = Relationship(back_populates="supplier")
 
 class SupplierTransaction(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -57,22 +60,51 @@ class SupplierTransaction(SQLModel, table=True):
     # Relationships
     supplier: Optional[Supplier] = Relationship(back_populates="transactions")
 
-class PondFeed(SQLModel, table=True):
+class FishFeed(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    brand: Optional[str] = None
+    description: Optional[str] = None
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    purchases: List["PondFeedPurchase"] = Relationship(back_populates="feed")
+    usages: List["PondFeedUsage"] = Relationship(back_populates="feed")
+
+class PondFeedPurchase(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     pond_id: Optional[int] = Field(default=None, foreign_key="pond.id", nullable=True)
     supplier_id: int = Field(foreign_key="supplier.id")
+    feed_id: Optional[int] = Field(default=None, foreign_key="fishfeed.id", nullable=True) # Link to FishFeed
     date: datetime
     quantity: float
     unit_id: int = Field(foreign_key="unit.id")
     price_per_unit: float
     total_amount: float
-    description: Optional[str] = None
+    description: Optional[str] = None # Legacy/Notes
     user_id: int = Field(foreign_key="user.id")
     
     # Relationships
-    pond: Optional[Pond] = Relationship(back_populates="pond_feeds")
-    supplier: Optional[Supplier] = Relationship(back_populates="pond_feeds")
-    unit: Optional[Unit] = Relationship(back_populates="pond_feeds")
+    pond: Optional[Pond] = Relationship(back_populates="feed_purchases")
+    supplier: Optional[Supplier] = Relationship(back_populates="feed_purchases")
+    unit: Optional[Unit] = Relationship(back_populates="feed_purchases")
+    feed: Optional[FishFeed] = Relationship(back_populates="purchases")
+
+class PondFeedUsage(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pond_id: int = Field(foreign_key="pond.id")
+    feed_id: int = Field(foreign_key="fishfeed.id")
+    date: datetime
+    quantity: float
+    unit_id: int = Field(foreign_key="unit.id")
+    price_per_unit: float
+    total_cost: float
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    pond: Optional[Pond] = Relationship(back_populates="feed_usages")
+    feed: Optional[FishFeed] = Relationship(back_populates="usages")
+    unit: Optional[Unit] = Relationship(back_populates="feed_usages")
 
 class LaborCost(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -104,17 +136,46 @@ class Fish(SQLModel, table=True):
     category: Optional[FishCategory] = Relationship(back_populates="fish")
     sale_items: List["FishSaleItem"] = Relationship(back_populates="fish")
 
+class FishBuyer(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    user_id: int = Field(foreign_key="user.id")
+    
+    # Relationships
+    sales: List["FishSale"] = Relationship(back_populates="buyer")
+    transactions: List["FishBuyerTransaction"] = Relationship(back_populates="buyer")
+
+
+class FishBuyerTransaction(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    buyer_id: int = Field(foreign_key="fishbuyer.id")
+    date: datetime
+    amount: float
+    transaction_type: str = Field(description="payment (buyer pays money), due (buyer buys on credit)")
+    note: Optional[str] = None
+    user_id: int = Field(foreign_key="user.id")
+
+    # Relationships
+    buyer: Optional[FishBuyer] = Relationship(back_populates="transactions")
+
 class FishSale(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     date: datetime
-    buyer_name: Optional[str] = None
+    buyer_name: Optional[str] = None # Legacy/Fallback
+    buyer_id: Optional[int] = Field(default=None, foreign_key="fishbuyer.id", nullable=True)
     sale_type: str = Field(default="detailed")  # 'simple' or 'detailed'
+    payment_status: str = Field(default="paid") # 'paid', 'due', 'partial'
     total_amount: float
+    paid_amount: float = Field(default=0.0)
+    due_amount: float = Field(default=0.0)
     total_weight: Optional[float] = None
     user_id: int = Field(foreign_key="user.id")
     
     # Relationships
     items: List["FishSaleItem"] = Relationship(back_populates="sale")
+    buyer: Optional[FishBuyer] = Relationship(back_populates="sales")
 
 class FishSaleItem(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

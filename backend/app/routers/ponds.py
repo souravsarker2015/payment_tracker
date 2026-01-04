@@ -68,7 +68,7 @@ def get_pond_stats(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    from app.models.fish_farming import FishSaleItem, PondFeed, LaborCost
+    from app.models.fish_farming import FishSaleItem, PondFeedPurchase, LaborCost
     
     # Verify pond belongs to user
     pond = session.get(Pond, pond_id)
@@ -82,7 +82,7 @@ def get_pond_stats(
     total_quantity_sold = sum(item.quantity for item in sale_items)
     
     # Calculate total feed expenses for this pond
-    feeds_query = select(PondFeed).where(PondFeed.pond_id == pond_id)
+    feeds_query = select(PondFeedPurchase).where(PondFeedPurchase.pond_id == pond_id)
     feeds = session.exec(feeds_query).all()
     total_feed_expense = sum(feed.total_amount for feed in feeds)
     

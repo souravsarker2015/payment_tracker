@@ -19,9 +19,13 @@ class FishSaleItemCreate(BaseModel):
 
 class FishSaleCreate(BaseModel):
     date: str
-    buyer_name: str = None
+    buyer_name: str = None # Legacy/Fallback
+    buyer_id: int | None = None
     sale_type: str = "detailed"  # 'simple' or 'detailed'
+    payment_status: str = "paid"
     total_amount: float
+    paid_amount: float = 0.0
+    # due_amount is calculated
     total_weight: float = None
     items: List[FishSaleItemCreate] = []  # Make items optional
 
@@ -42,8 +46,12 @@ class FishSaleResponse(BaseModel):
     id: int
     date: str
     buyer_name: str | None
+    buyer_id: int | None
     sale_type: str
+    payment_status: str
     total_amount: float
+    paid_amount: float
+    due_amount: float
     total_weight: float | None
     items: List[FishSaleItemResponse] = []
     
@@ -61,12 +69,53 @@ def create_fish_sale(
     # Parse date
     sale_date = datetime.fromisoformat(sale_data.date.replace('Z', '+00:00'))
     
+    # Calculate due amount
+    total = sale_data.total_amount
+    paid = sale_data.paid_amount
+    due = total - paid
+    
+    # Determine Status if strictly based on amounts, or trust frontend
+    # But usually backend should validate
+    if due <= 0:
+        status = "paid"
+        due = 0 # Prevent negative due
+    elif paid <= 0:
+        status = "due"
+    else:
+        status = "partial" # Or 'due' depending on requirement. Let's use 'partial' or just keep frontend's if valid? 
+        # Plan said: 'paid', 'due', 'partial'
+    
+    # Override frontend status if amounts dictate otherwise?
+    # Let's respect amounts.
+    if sale_data.payment_status == "cash": # If frontend sends "cash" (Nagad)
+        paid = total
+        due = 0
+        status = "paid"
+    elif sale_data.payment_status == "credit": # If frontend sends "credit" (Baki)
+        # paid uses input paid_amount
+        due = total - paid
+        if due <= 0:
+             status = "paid"
+             due = 0
+        elif paid > 0:
+            status = "partial"
+        else:
+            status = "due"
+    else:
+        # Fallback to calculated
+        status = "partial" if (due > 0 and paid > 0) else ("paid" if due <= 0 else "due")
+
+    
     # Create sale
     sale = FishSale(
         date=sale_date,
         buyer_name=sale_data.buyer_name,
+        buyer_id=sale_data.buyer_id,
         sale_type=sale_data.sale_type,
-        total_amount=sale_data.total_amount,
+        payment_status=status,
+        total_amount=total,
+        paid_amount=paid,
+        due_amount=due,
         total_weight=sale_data.total_weight,
         user_id=current_user.id
     )
@@ -105,7 +154,7 @@ def read_fish_sales(
     query = (
         select(FishSale)
         .where(FishSale.user_id == current_user.id)
-        .options(selectinload(FishSale.items))
+        .options(selectinload(FishSale.items), selectinload(FishSale.buyer))
     )
     
     # Apply date filters if provided
@@ -136,14 +185,21 @@ def read_fish_sales(
         try:
             # Ensure items is not None
             items_list = sale.items if sale.items is not None else []
-            print(f"Sale {sale.id} has {len(items_list)} items")
+            # print(f"Sale {sale.id} has {len(items_list)} items")
+            
+            # Resolve buyer name
+            buyer_name_resolved = sale.buyer.name if sale.buyer else sale.buyer_name
             
             result.append(FishSaleResponse(
                 id=sale.id,
                 date=sale.date.isoformat(),
-                buyer_name=sale.buyer_name,
+                buyer_name=buyer_name_resolved,
+                buyer_id=sale.buyer_id,
                 sale_type=sale.sale_type,
+                payment_status=sale.payment_status,
                 total_amount=sale.total_amount,
+                paid_amount=sale.paid_amount,
+                due_amount=sale.due_amount,
                 total_weight=sale.total_weight,
                 items=[
                     FishSaleItemResponse(
@@ -190,13 +246,41 @@ async def update_fish_sale(
     # Parse date
     sale_date = datetime.fromisoformat(sale_data.date.replace('Z', '+00:00'))
     
+    # Calculate amounts again for update
+    total = sale_data.total_amount
+    paid = sale_data.paid_amount
+    due = total - paid
+    
+    if sale_data.payment_status == "cash": 
+        paid = total
+        due = 0
+        status = "paid"
+    elif sale_data.payment_status == "credit":
+        due = total - paid
+        if due <= 0:
+             status = "paid"
+             due = 0
+        elif paid > 0:
+            status = "partial"
+        else:
+            status = "due"
+    else:
+        # Fallback to calculated (e.g. if updating amount without changing status explicitly)
+        # But we should trust the status calculation based on amounts
+        status = "partial" if (due > 0 and paid > 0) else ("paid" if due <= 0 else "due")
+
+    
     # Use a single transaction for atomicity
     try:
         # 1. Update sale details
         db_sale.date = sale_date
         db_sale.buyer_name = sale_data.buyer_name
+        db_sale.buyer_id = sale_data.buyer_id
         db_sale.sale_type = sale_data.sale_type
-        db_sale.total_amount = sale_data.total_amount
+        db_sale.payment_status = status
+        db_sale.total_amount = total
+        db_sale.paid_amount = paid
+        db_sale.due_amount = due
         db_sale.total_weight = sale_data.total_weight
         session.add(db_sale)
 

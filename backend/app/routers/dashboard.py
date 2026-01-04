@@ -3,7 +3,7 @@ from sqlmodel import Session, select, func
 from app.database import get_session
 from app.auth import get_current_user
 from app.models import User
-from app.models.fish_farming import Pond, FishSale, PondFeed
+from app.models.fish_farming import Pond, FishSale, PondFeedPurchase
 from datetime import datetime, timedelta
 from typing import List, Dict
 
@@ -52,11 +52,11 @@ def get_dashboard_stats(
     total_revenue = session.exec(revenue_query).one() or 0
     
     # Total feed expenses (filtered or all time)
-    expenses_query = select(func.sum(PondFeed.total_amount)).where(PondFeed.user_id == current_user.id)
+    expenses_query = select(func.sum(PondFeedPurchase.total_amount)).where(PondFeedPurchase.user_id == current_user.id)
     if filter_start:
-        expenses_query = expenses_query.where(PondFeed.date >= filter_start)
+        expenses_query = expenses_query.where(PondFeedPurchase.date >= filter_start)
     if filter_end:
-        expenses_query = expenses_query.where(PondFeed.date <= filter_end)
+        expenses_query = expenses_query.where(PondFeedPurchase.date <= filter_end)
     total_expenses = session.exec(expenses_query).one() or 0
     
     # This month's sales
@@ -69,9 +69,9 @@ def get_dashboard_stats(
     
     # This month's expenses
     month_expenses = session.exec(
-        select(func.sum(PondFeed.total_amount))
-        .where(PondFeed.user_id == current_user.id)
-        .where(PondFeed.date >= month_start)
+        select(func.sum(PondFeedPurchase.total_amount))
+        .where(PondFeedPurchase.user_id == current_user.id)
+        .where(PondFeedPurchase.date >= month_start)
     ).one() or 0
     
     # Monthly sales trend (last 6 months)
@@ -107,10 +107,10 @@ def get_dashboard_stats(
             month_end = datetime(month_date.year, month_date.month + 1, 1)
         
         expenses = session.exec(
-            select(func.sum(PondFeed.total_amount))
-            .where(PondFeed.user_id == current_user.id)
-            .where(PondFeed.date >= month_start)
-            .where(PondFeed.date < month_end)
+            select(func.sum(PondFeedPurchase.total_amount))
+            .where(PondFeedPurchase.user_id == current_user.id)
+            .where(PondFeedPurchase.date >= month_start)
+            .where(PondFeedPurchase.date < month_end)
         ).one() or 0
         
         monthly_expenses.insert(0, {

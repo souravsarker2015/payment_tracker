@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import api from '@/lib/api';
-import { Plus, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, RefreshCw, Check, X } from 'lucide-react';
 import { LineChart, Line, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Modal from '@/components/Modal';
 import ConfirmModal from '@/components/ConfirmModal';
 import LoadingSpinner from '@/components/LoadingSpinner';
+
+interface FishBuyer {
+    id: number;
+    name: string;
+}
 
 interface Pond {
     id: number;
@@ -32,6 +37,10 @@ interface FishSale {
     id: number;
     date: string;
     buyer_name?: string;
+    buyer_id?: number | null;
+    payment_status: 'paid' | 'due' | 'partial';
+    paid_amount: number;
+    due_amount: number;
     sale_type: 'simple' | 'detailed';
     total_amount: number;
     total_weight?: number;
@@ -56,6 +65,7 @@ type FilterMode = 'all' | 'today' | 'week' | 'month' | 'year' | 'select_month' |
 export default function SalesPage() {
     const [sales, setSales] = useState<FishSale[]>([]);
     const [ponds, setPonds] = useState<Pond[]>([]);
+    const [buyers, setBuyers] = useState<FishBuyer[]>([]);
     const [fishes, setFishes] = useState<any[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,7 +82,10 @@ export default function SalesPage() {
 
     const [formData, setFormData] = useState({
         date: new Date().toISOString().slice(0, 16),
-        buyer_name: ''
+        buyer_name: '',
+        buyer_id: '',
+        payment_status: 'cash', // 'cash' (Nagad) or 'credit' (Baki)
+        paid_amount: ''
     });
 
     const [entryMode, setEntryMode] = useState<'simple' | 'detailed'>('detailed');
@@ -94,8 +107,12 @@ export default function SalesPage() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [pendingSubmit, setPendingSubmit] = useState<any>(null);
 
+    const [isAddingBuyer, setIsAddingBuyer] = useState(false);
+    const [quickBuyerName, setQuickBuyerName] = useState('');
+
     useEffect(() => {
         fetchPonds();
+        fetchBuyers();
         fetchFishes();
         fetchUnits();
 
@@ -203,6 +220,15 @@ export default function SalesPage() {
         }
     };
 
+    const fetchBuyers = async () => {
+        try {
+            const response = await api.get('/fish-buyers');
+            setBuyers(response.data);
+        } catch (error) {
+            console.error('Failed to fetch buyers', error);
+        }
+    };
+
     const fetchFishes = async () => {
         try {
             const response = await api.get('/fishes');
@@ -259,6 +285,9 @@ export default function SalesPage() {
             requestData = {
                 date: new Date(formData.date).toISOString(),
                 buyer_name: formData.buyer_name || undefined,
+                buyer_id: formData.buyer_id ? parseInt(formData.buyer_id) : null,
+                payment_status: formData.payment_status,
+                paid_amount: formData.payment_status === 'cash' ? 0 : parseFloat(formData.paid_amount || '0'),
                 sale_type: 'simple',
                 total_amount: parseFloat(simpleFormData.total_amount),
                 items: []
@@ -276,7 +305,10 @@ export default function SalesPage() {
 
             requestData = {
                 date: new Date(formData.date).toISOString(),
-                buyer_name: formData.buyer_name,
+                buyer_name: formData.buyer_name || undefined, // Keep for legacy or if buyer_id not used? Or just use buyer_id logic
+                buyer_id: formData.buyer_id ? parseInt(formData.buyer_id) : null,
+                payment_status: formData.payment_status,
+                paid_amount: formData.payment_status === 'cash' ? 0 : parseFloat(formData.paid_amount || '0'), // Backend handles cash=total logic if 0, but safe to send 0
                 sale_type: 'detailed',
                 total_amount: totalAmount,
                 total_weight: totalWeight,
@@ -310,7 +342,10 @@ export default function SalesPage() {
             setEditingSale(null);
             setFormData({
                 date: new Date().toISOString().slice(0, 16),
-                buyer_name: ''
+                buyer_name: '',
+                buyer_id: '',
+                payment_status: 'cash',
+                paid_amount: ''
             });
             setSimpleFormData({
                 total_amount: ''
@@ -348,7 +383,10 @@ export default function SalesPage() {
             setEditingSale(null);
             setFormData({
                 date: new Date().toISOString().slice(0, 16),
-                buyer_name: ''
+                buyer_name: '',
+                buyer_id: '',
+                payment_status: 'cash',
+                paid_amount: ''
             });
             setSimpleFormData({
                 total_amount: ''
@@ -381,7 +419,10 @@ export default function SalesPage() {
         setEditingSale(sale);
         setFormData({
             date: new Date(sale.date).toISOString().slice(0, 16),
-            buyer_name: sale.buyer_name || ''
+            buyer_name: sale.buyer_name || '',
+            buyer_id: sale.buyer_id ? sale.buyer_id.toString() : '',
+            payment_status: sale.payment_status === 'paid' ? 'cash' : 'credit', // Map backend status back to form mode
+            paid_amount: sale.paid_amount ? sale.paid_amount.toString() : ''
         });
 
         // Determine entry mode based on sale_type
@@ -417,6 +458,24 @@ export default function SalesPage() {
         }
 
         setIsAddModalOpen(true);
+    };
+
+    const handleQuickAddBuyer = async () => {
+        if (!quickBuyerName.trim()) return;
+        try {
+            const res = await api.post('/fish-buyers', { name: quickBuyerName });
+            setQuickBuyerName('');
+            setIsAddingBuyer(false);
+
+            const buyersRes = await api.get('/fish-buyers');
+            setBuyers(buyersRes.data);
+
+            if (res.data && res.data.id) {
+                setFormData(prev => ({ ...prev, buyer_id: res.data.id.toString() }));
+            }
+        } catch (error) {
+            console.error('Failed to add buyer', error);
+        }
     };
 
     const handleDelete = async (id: number) => {
@@ -744,8 +803,9 @@ export default function SalesPage() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buyer</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Weight</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Weight</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Paid / Due</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -791,6 +851,17 @@ export default function SalesPage() {
                                                 ৳{sale.total_amount.toLocaleString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${sale.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                                                        sale.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
+                                                        }`}>
+                                                        {sale.payment_status === 'paid' ? 'Paid' : sale.payment_status === 'partial' ? 'Partial' : 'Due'}
+                                                    </span>
+                                                    {sale.due_amount > 0 && <span className="text-red-500 text-xs font-medium">Due: ৳{sale.due_amount.toLocaleString()}</span>}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                                                 <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() => handleEditSale(sale)}
@@ -823,7 +894,10 @@ export default function SalesPage() {
                     setEditingSale(null);
                     setFormData({
                         date: new Date().toISOString().slice(0, 16),
-                        buyer_name: ''
+                        buyer_name: '',
+                        buyer_id: '',
+                        payment_status: 'cash',
+                        paid_amount: ''
                     });
                     setSimpleFormData({ total_amount: '' });
                     setSaleItems([{
@@ -835,6 +909,8 @@ export default function SalesPage() {
                         amount: 0
                     }]);
                     setEntryMode('detailed');
+                    setIsAddingBuyer(false);
+                    setQuickBuyerName('');
                 }}
                 title={editingSale ? "Edit Fish Sale" : "Add Fish Sale"}
             >
@@ -873,14 +949,116 @@ export default function SalesPage() {
                             onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                         />
                     </div>
+                    {/* Buyer Selection */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Buyer Name (Optional)</label>
-                        <input
-                            type="text"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
-                            value={formData.buyer_name}
-                            onChange={(e) => setFormData({ ...formData, buyer_name: e.target.value })}
-                        />
+                        <label className="block text-sm font-medium text-gray-700">Buyer (আড়ৎ/ক্রেতা)</label>
+                        {isAddingBuyer ? (
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="New buyer name"
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                                    value={quickBuyerName}
+                                    onChange={(e) => setQuickBuyerName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleQuickAddBuyer();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleQuickAddBuyer}
+                                    className="inline-flex items-center p-2 border border-transparent rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                                >
+                                    <Check className="h-4 w-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingBuyer(false)}
+                                    className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mt-1 flex gap-2">
+                                <div className="relative flex-grow">
+                                    <select
+                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                                        value={formData.buyer_id}
+                                        onChange={(e) => setFormData({ ...formData, buyer_id: e.target.value })}
+                                    >
+                                        <option value="">Select Buyer (Required for Credit)</option>
+                                        {buyers.map((buyer) => (
+                                            <option key={buyer.id} value={buyer.id}>
+                                                {buyer.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingBuyer(true)}
+                                    className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                    title="Add new buyer"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
+                        {!isAddingBuyer && (
+                            <p className="mt-1 text-xs text-gray-500">
+                                Or leave empty for generic cash sale (legacy: {formData.buyer_name || 'None'})
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Payment Status */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Payment Type</label>
+                            <div className="mt-2 flex gap-4">
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="radio"
+                                        className="form-radio text-indigo-600"
+                                        name="payment_status"
+                                        value="cash"
+                                        checked={formData.payment_status === 'cash'}
+                                        onChange={() => setFormData({ ...formData, payment_status: 'cash' })}
+                                    />
+                                    <span className="ml-2">Cash (নগদ)</span>
+                                </label>
+                                <label className="inline-flex items-center">
+                                    <input
+                                        type="radio"
+                                        className="form-radio text-indigo-600"
+                                        name="payment_status"
+                                        value="credit"
+                                        checked={formData.payment_status === 'credit'}
+                                        onChange={() => setFormData({ ...formData, payment_status: 'credit' })}
+                                    />
+                                    <span className="ml-2">Credit (বাকি)</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {formData.payment_status === 'credit' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Paid Amount (জমা)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border text-gray-900"
+                                    value={formData.paid_amount}
+                                    onChange={(e) => setFormData({ ...formData, paid_amount: e.target.value })}
+                                    placeholder="Amount paid now"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {entryMode === 'simple' ? (
