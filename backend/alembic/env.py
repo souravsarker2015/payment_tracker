@@ -5,6 +5,9 @@ from sqlalchemy import pool
 
 from alembic import context
 from sqlmodel import SQLModel
+import os
+from dotenv import load_dotenv
+load_dotenv()
 from app.models import User, Creditor, Transaction
 
 # this is the Alembic Config object, which provides
@@ -59,6 +62,13 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # Override sqlalchemy.url with environment variable if present
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        # Avoid "postgresql://" vs "postgresql+psycopg2://" issues if necessary
+        # SQLModel/SQLAlchemy sometimes needs the +psycopg2
+        config.set_main_option("sqlalchemy.url", db_url)
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

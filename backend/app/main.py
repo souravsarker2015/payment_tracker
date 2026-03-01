@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import create_db_and_tables
+from .db_utils import apply_migrations
 from .routers import auth, creditors, transactions, debtors, debtor_transactions, contributors, contributor_transactions, expenses, ponds, suppliers, labor, fish_sales, units, pond_feeds, dashboard, persons, organizations, incomes, income_dashboard, fish_categories, fishes, fish_buyers, fish_feeds, feed_usage
 from dotenv import load_dotenv
 load_dotenv()
@@ -48,6 +49,10 @@ app.include_router(fish_buyers.router)
 
 @app.on_event("startup")
 def on_startup():
+    # First, apply any pending migrations
+    apply_migrations()
+    
+    # Then ensure tables are created (for non-Alembic tracked tables or fresh DBs)
     create_db_and_tables()
     
     # # Fix PostgreSQL sequences (ensures auto-increment works after data imports)
