@@ -68,7 +68,7 @@ def get_pond_stats(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    from app.models.fish_farming import FishSaleItem, PondFeedPurchase, LaborCost
+    from app.models.fish_farming import FishSaleItem, PondFeedPurchase, LaborCost, Supplier
     
     # Verify pond belongs to user
     pond = session.get(Pond, pond_id)
@@ -92,7 +92,7 @@ def get_pond_stats(
     for feed in feeds:
         # By supplier
         if feed.supplier_id not in feed_by_supplier:
-            supplier = session.get(Pond, feed.supplier_id)
+            supplier = session.get(Supplier, feed.supplier_id)
             feed_by_supplier[feed.supplier_id] = {
                 "supplier_id": feed.supplier_id,
                 "supplier_name": feed.supplier.name if feed.supplier else "Unknown",
