@@ -68,7 +68,7 @@ def get_pond_stats(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    from app.models.fish_farming import FishSaleItem, PondFeedPurchase, LaborCost, Supplier
+    from app.models.fish_farming import FishSaleItem, PondFeedPurchase, LaborCost, Supplier, Unit
     
     # Verify pond belongs to user
     pond = session.get(Pond, pond_id)
@@ -78,13 +78,13 @@ def get_pond_stats(
     # Calculate total sales from this pond
     sales_query = select(FishSaleItem).where(FishSaleItem.pond_id == pond_id)
     sale_items = session.exec(sales_query).all()
-    total_sales = sum(item.amount for item in sale_items)
-    total_quantity_sold = sum(item.quantity for item in sale_items)
+    total_sales = sum((item.amount or 0) for item in sale_items)
+    total_quantity_sold = sum((item.quantity or 0) for item in sale_items)
     
     # Calculate total feed expenses for this pond
     feeds_query = select(PondFeedPurchase).where(PondFeedPurchase.pond_id == pond_id)
     feeds = session.exec(feeds_query).all()
-    total_feed_expense = sum(feed.total_amount for feed in feeds)
+    total_feed_expense = sum((feed.total_amount or 0) for feed in feeds)
     
     # Group feed by supplier
     feed_by_supplier = {}
@@ -95,23 +95,23 @@ def get_pond_stats(
             supplier = session.get(Supplier, feed.supplier_id)
             feed_by_supplier[feed.supplier_id] = {
                 "supplier_id": feed.supplier_id,
-                "supplier_name": feed.supplier.name if feed.supplier else "Unknown",
+                "supplier_name": supplier.name if supplier else "Unknown",
                 "total_amount": 0,
                 "total_quantity": 0
             }
-        feed_by_supplier[feed.supplier_id]["total_amount"] += feed.total_amount
-        feed_by_supplier[feed.supplier_id]["total_quantity"] += feed.quantity
+        feed_by_supplier[feed.supplier_id]["total_amount"] += (feed.total_amount or 0)
+        feed_by_supplier[feed.supplier_id]["total_quantity"] += (feed.quantity or 0)
         
         # By unit
         unit_name = feed.unit.name if feed.unit else "Unknown"
         if unit_name not in feed_quantity_by_unit:
             feed_quantity_by_unit[unit_name] = 0
-        feed_quantity_by_unit[unit_name] += feed.quantity
+        feed_quantity_by_unit[unit_name] += (feed.quantity or 0)
     
     # Calculate labor costs for this pond
     labor_query = select(LaborCost).where(LaborCost.pond_id == pond_id)
     labor_costs = session.exec(labor_query).all()
-    total_labor = sum(labor.amount for labor in labor_costs)
+    total_labor = sum((labor.amount or 0) for labor in labor_costs)
     
     # Calculate profit/loss
     total_expenses = total_feed_expense + total_labor
