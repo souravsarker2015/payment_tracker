@@ -33,10 +33,10 @@ class Pond(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     
     # Relationships
-    labor_costs: List["LaborCost"] = Relationship(back_populates="pond")
-    sale_items: List["FishSaleItem"] = Relationship(back_populates="pond")
-    feed_purchases: List["PondFeedPurchase"] = Relationship(back_populates="pond")
-    feed_usages: List["PondFeedUsage"] = Relationship(back_populates="pond")
+    labor_costs: List["LaborCost"] = Relationship(back_populates="pond", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    sale_items: List["FishSaleItem"] = Relationship(back_populates="pond", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    feed_purchases: List["PondFeedPurchase"] = Relationship(back_populates="pond", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
+    feed_usages: List["PondFeedUsage"] = Relationship(back_populates="pond", sa_relationship_kwargs={"cascade": "all, delete-orphan"})
 
 class Supplier(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
