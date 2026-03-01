@@ -58,22 +58,23 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    Creates the engine directly from DATABASE_URL to bypass ConfigParser,
+    which cannot handle '%' in connection string passwords (common in Supabase).
     """
-    # Override sqlalchemy.url with environment variable if present
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        # Avoid "postgresql://" vs "postgresql+psycopg2://" issues if necessary
-        # SQLModel/SQLAlchemy sometimes needs the +psycopg2
-        config.set_main_option("sqlalchemy.url", db_url)
+    from sqlalchemy import create_engine
 
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    db_url = os.environ.get("DATABASE_URL")
+
+    if db_url:
+        # Create the engine directly, bypassing alembic.ini / ConfigParser
+        connectable = create_engine(db_url, poolclass=pool.NullPool)
+    else:
+        # Fallback to alembic.ini configuration (e.g., for local SQLite)
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
     with connectable.connect() as connection:
         context.configure(

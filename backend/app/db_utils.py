@@ -10,17 +10,27 @@ from .database import engine
 def apply_migrations():
     """
     Apply Alembic migrations programmatically.
+    Bypasses alembic.ini ConfigParser to avoid issues with special characters
+    (e.g., '%') in DATABASE_URL passwords (common with Supabase).
     """
     try:
-        # Get the path to alembic.ini (it's in the backend directory)
-        # Assuming this file is in backend/app/db_utils.py
+        # Get the path to backend directory (parent of app/)
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         ini_path = os.path.join(base_dir, "alembic.ini")
-        
-        # Load the configuration
-        alembic_cfg = Config(ini_path)
-        
-        # Run the 'upgrade head' command
+
+        # Load config from alembic.ini but do NOT let it parse the URL
+        # (ConfigParser chokes on '%' in passwords)
+        alembic_cfg = Config()
+        alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
+
+        # Inject the DATABASE_URL directly, bypassing alembic.ini interpolation
+        db_url = os.environ.get("DATABASE_URL", "")
+        if db_url:
+            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
+        else:
+            # Fallback: read from ini directly if no env var
+            alembic_cfg = Config(ini_path)
+
         print("🚀 Applying database migrations...")
         command.upgrade(alembic_cfg, "head")
         print("✅ Database migrations applied successfully")
